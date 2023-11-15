@@ -34,10 +34,8 @@ def pearson(x,y,n):
     # x,y: sets 
     # n: sample size
     x_sum = sum(x)
-    print('xSUM = ',x_sum)
     x_mean = x_sum / len(x)
     y_sum = sum(y)
-    print('ySum = ',y_sum)
     y_mean = y_sum / len(y)
     numerator = 0
     denominator = 0
@@ -50,27 +48,36 @@ def pearson(x,y,n):
         sum1 += math.sqrt((x[i] - x_mean) ** 2)
         sum2 += math.sqrt((y[i] - y_mean) ** 2)
 
-    denominator = sum1 + sum2
+    denominator = sum1 * sum2
     return numerator / denominator
 
 a = {1, 2, 3, 4}
 b = {3, 4, 5, 6}
 x = [1,2,3,4]
 y = [3,4,5,6]
+z = [1,2,3,4]
 ena = [4.0]
 dyo = [3.5,6.0,4.0]
 # x = np.arange(10, 20)
 # y = np.array([2, 1, 4, 5, 8, 12, 18, 25, 96, 48])
 
-print('jaccard: ',jaccard(ena,dyo))
+# print('pearson: ',pearson(x,z,2))
+user_x_ratings = ratings_df[ratings_df['userId'] == 1]
+movie_ratings_y_users = pd.DataFrame({})
 
-def userToUser(id,simFunc):
+movie_ratings_y_users = ratings_df[(ratings_df['movieId'].isin(user_x_ratings['movieId'])) & (ratings_df['userId'] != 1)]
+
+print(user_x_ratings.size)
+print(movie_ratings_y_users['userId'].nunique())
+
+def userToUser(id,simFunc,k):
     # id: id of the user for recommendation
     # simFunc: the similarity function used
+    # k: sample of users with similar ratings to user for recommendation
     rx = []
-    user_x_ratings = []
-    if ratings_df[['userId']] == id:
-        user_x_ratings.append(ratings_df['rating'])
+    user_x_ratings = ratings_df[ratings_df['userId'] == id]  # get ratings of x user
+    movie_ratings_y_users = ratings_df[(ratings_df['movieId'].isin(user_x_ratings['movieId'])) & (ratings_df['userId'] != id)] # get all ratings of users y for the same movies as x
+
 
     metric = 0
     if simFunc.lower() == "jaccard":
