@@ -94,32 +94,40 @@ dyo = [3.5,6.0,4.0]
 # x = np.arange(10, 20)
 # y = np.array([2, 1, 4, 5, 8, 12, 18, 25, 96, 48])
 
-print('pearson: ',pearson(x,y))
-user_x_ratings = ratings_df[ratings_df['userId'] == 1]
-movie_ratings_y_users = pd.DataFrame({})
+# print('pearson: ',pearson(x,y))
+# user_x_ratings = ratings_df[ratings_df['userId'] == 1]
+# movie_ratings_y_users = pd.DataFrame({})
 
-movie_ratings_y_users = ratings_df[(ratings_df['movieId'].isin(user_x_ratings['movieId'])) & (ratings_df['userId'] != 1)]
-y_users_sample = movie_ratings_y_users.sample(n=128)
+# movie_ratings_y_users = ratings_df[(ratings_df['movieId'].isin(user_x_ratings['movieId'])) & (ratings_df['userId'] != 1)]
+# # y_users_sample = movie_ratings_y_users.sample(n=128)
+# x = []
+# for rating in user_x_ratings['rating']:
+#     x.append(rating)
 
-print(user_x_ratings.size)
-print(movie_ratings_y_users['userId'].nunique())
 
-def userToUser(id,simFunc,k):
+
+def userToUser(id,simFunc,k,n):
     # id: id of the user for recommendation
     # simFunc: the similarity function used
     # k: k users with ratings most similar to user for recommendation
+    # n: return top n recommendations
 
     user_x_ratings = ratings_df[ratings_df['userId'] == id]  # get ratings of x user
+    user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
     movie_ratings_y_users = ratings_df[(ratings_df['movieId'].isin(user_x_ratings['movieId'])) & (ratings_df['userId'] != id)] # get all ratings of users y for the same movies as x
-    
-    sample_y_user_ids = movie_ratings_y_users['userId'].drop_duplicates().sample(n=k) # get k users most similar to user x ratings.
-    y_users_sample = movie_ratings_y_users[movie_ratings_y_users['userId'].isin(sample_y_user_ids)]
+    y_users_no_dupes = movie_ratings_y_users['userId'].unique() # get user ids without duplicates and get all movies that are different from x's and they have rated.
+    y_user_id_sample = np.random.choice(y_users_no_dupes,size=k, replace=False) # get k of these users which are similar to x
+    y_user_ratings_different_movies_from_x = ratings_df[(ratings_df['userId'].isin(y_user_id_sample)) & (~ratings_df['movieId'].isin(user_x_movieIds))] # get ratings of y users for other movies that x has not watched.
 
-    rx = []
+    rx = {} # dictionary to store recommendation scores key: movieId , value: score
     x = []
     y = []
-    x.append(user_x_ratings['rating']) # ratings of user x
-    y.append(y_users_sample['rating']) # ratings of k users
+    for rating in user_x_ratings['rating']: # ratings of user x
+        x.append(rating)
+    
+    for rating in y_user_ratings_different_movies_from_x['rating']: # ratings of k users
+        y.append(rating)
+     
 
     sxy = 0 # similarity score
     if simFunc.lower() == "jaccard":
@@ -131,14 +139,35 @@ def userToUser(id,simFunc,k):
     else:
         sxy = pearson(x,y)
     
-    # calculation of formula for recommendation score rxi
-    numerator = 0
-    denominator = 0
-    for i in range(0,len(y)):
-        numerator += sxy * y[i]
-        denominator += sxy
+    print('sxy: ',sxy)
+    # calculation of formula for recommendation score rxi for each movie not watched by user x
+    for movieId in y_user_ratings_different_movies_from_x['movieId']:
+        y_rating = y_user_ratings_different_movies_from_x[y_user_ratings_different_movies_from_x['movieId'] == movieId] # get ratings for each movie
+        y = []
+        for rating in y_rating['rating']:
+            y.append(rating)
+
+        # normalization add
+
+        numerator = 0
+        denominator = 0
+        for i in range(0,len(y)):
+            numerator += sxy * y[i]
+            denominator += sxy
+
+        rxi = numerator / denominator
+        rx[movieId] = rxi
+    
+    sorted_rx = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
+    first_n_keys = list(sorted_rx.keys())[:n] # get top n keys
+    recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
+    print("Here are your top", n, "recommendations: \n")
+    print(recommended_movies['title'])
         
     
+        
+# testing
+userToUser(1,"jaccard",128,10)
 
     
 
