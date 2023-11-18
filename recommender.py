@@ -3,19 +3,19 @@ import numpy as np
 import math
 
 
-ratings_df = pd.read_csv('datasets/ratings.csv')
-tags_df = pd.read_csv('datasets/tags.csv')
-movies_df = pd.read_csv('datasets/movies.csv')
-links_df = pd.read_csv('datasets/links.csv')
-genome_tags_df = pd.read_csv('datasets/genome-tags.csv')
-genome_scores_df = pd.read_csv('datasets/genome-scores.csv')
+ratings_df = pd.read_csv('100_datasets/ratings.csv')
+tags_df = pd.read_csv('100_datasets/tags.csv')
+movies_df = pd.read_csv('100_datasets/movies.csv')
+links_df = pd.read_csv('100_datasets/links.csv')
+# genome_tags_df = pd.read_csv('100_datasets/genome-tags.csv')
+# genome_scores_df = pd.read_csv('100_datasets/genome-scores.csv')
 
 print('ratings_df size: ', ratings_df.size)
 print('tags_df size: ', tags_df.size)
 print('movies_df size: ', movies_df.size)
 print('links_df size: ', links_df.size)
-print('genome_tags_df size: ', genome_tags_df.size)
-print('genome_scores_df size: ', genome_scores_df.size)
+# print('genome_tags_df size: ', genome_tags_df.size)
+# print('genome_scores_df size: ', genome_scores_df.size)
 
 # Metrics creation
 def jaccard(a,b):
