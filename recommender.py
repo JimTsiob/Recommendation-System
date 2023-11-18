@@ -28,7 +28,7 @@ def dice(x,y):
     return (2*len(list(set(x).intersection(y)))) / (len(x) + len(y)) 
 
 def cosine(a,b):
-    # if the two sets do not have the same length we take a subsample
+    # if the two lists do not have the same length we take a subsample
     n = 0
     if len(a) > len(b):
         n = len(b)
@@ -36,7 +36,7 @@ def cosine(a,b):
         n = len(a)
     else:
         n = len(a) # at this part they're both the same size so we don't care which one we'll take.
-
+        
     numerator = 0
     denominator = 0
     sum1 = 0
@@ -46,16 +46,15 @@ def cosine(a,b):
     for i in range(0,n):
         numerator += (a[i] * b[i])
         sum1 += a[i] ** 2
-        root1 = math.sqrt(sum1)
         sum2 += b[i] ** 2
-        root2 = math.sqrt(sum2)
-
-    denominator = root1 * root2 
+        
+    root1 = math.sqrt(sum1)
+    root2 = math.sqrt(sum2)
+    denominator = root1 * root2
     return numerator / denominator
 
-def pearson(x,y):
-    # x,y: sets 
-    # if the two sets do not have the same length we take a subsample
+def pearson(x,y): 
+    # if the two lists do not have the same length we take a subsample
     n = 0
     if len(x) > len(y):
         n = len(y)
@@ -78,9 +77,9 @@ def pearson(x,y):
         numerator += (x[i] - x_mean) * (y[i] - y_mean)
         sum1 += (x[i] - x_mean) ** 2
         sum2 += (y[i] - y_mean) ** 2
-        root1 = math.sqrt(sum1)
-        root2 = math.sqrt(sum2)
 
+    root1 = math.sqrt(sum1)
+    root2 = math.sqrt(sum2)
     denominator = root1 * root2
     return numerator / denominator
 
@@ -104,6 +103,18 @@ dyo = [3.5,6.0,4.0]
 # for rating in user_x_ratings['rating']:
 #     x.append(rating)
 
+def normalizer(x):
+    # x: Iterable (most likely list)
+    # normalizer to transform the ratings in the interval [0,1]
+    norm_x = []
+    for num in x:
+        if max(x) == min(x): # this is to avoid divide by zero error, could happen with some arrays
+            norm_num = 0.1
+        else:
+            norm_num = (num - min(x)) / (max(x) - min(x))
+        norm_x.append(norm_num)
+    
+    return norm_x
 
 
 def userToUser(id,simFunc,k,n):
@@ -115,31 +126,46 @@ def userToUser(id,simFunc,k,n):
     user_x_ratings = ratings_df[ratings_df['userId'] == id]  # get ratings of x user
     user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
     movie_ratings_y_users = ratings_df[(ratings_df['movieId'].isin(user_x_ratings['movieId'])) & (ratings_df['userId'] != id)] # get all ratings of users y for the same movies as x
-    y_users_no_dupes = movie_ratings_y_users['userId'].unique() # get user ids without duplicates and get all movies that are different from x's and they have rated.
-    y_user_id_sample = np.random.choice(y_users_no_dupes,size=k, replace=False) # get k of these users which are similar to x
-    y_user_ratings_different_movies_from_x = ratings_df[(ratings_df['userId'].isin(y_user_id_sample)) & (~ratings_df['movieId'].isin(user_x_movieIds))] # get ratings of y users for other movies that x has not watched.
+    
 
     rx = {} # dictionary to store recommendation scores key: movieId , value: score
     x = []
-    y = []
+
     for rating in user_x_ratings['rating']: # ratings of user x
         x.append(rating)
-    
-    for rating in y_user_ratings_different_movies_from_x['rating']: # ratings of k users
-        y.append(rating)
      
 
-    sxy = 0 # similarity score
-    if simFunc.lower() == "jaccard":
-        sxy = jaccard(x,y)
-    elif simFunc.lower() == "dice":
-        sxy = dice(x,y)
-    elif simFunc.lower() == "cosine":
-        sxy = cosine(x,y)
-    else:
-        sxy = pearson(x,y)
+    # find similarity scores for all users y with user x
+    similarity_scores = {} # dictionary to hold sim scores , key: userId value: similarity score
+    for userId in movie_ratings_y_users['userId']:
+        y_similar_movie_rating = movie_ratings_y_users[movie_ratings_y_users['userId'] == userId] # get ratings for each user y for the same movies that x has watched
+        y = []
+        for rating in y_similar_movie_rating['rating']:
+            y.append(rating)
+
+        sxy = 0 # similarity score
+        if simFunc.lower() == "jaccard":
+            x = normalizer(x)
+            y = normalizer(y)
+            sxy = jaccard(x,y)
+        elif simFunc.lower() == "dice":
+            x = normalizer(x)
+            y = normalizer(y)
+            sxy = dice(x,y)
+        elif simFunc.lower() == "cosine":
+            x = normalizer(x)
+            y = normalizer(y)
+            sxy = cosine(x,y)
+        else:
+            # pearson handles normalization on it's own
+            sxy = pearson(x,y)
+        
+        similarity_scores[userId] = sxy
     
-    print('sxy: ',sxy)
+    sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
+    first_k_users = list(sorted_sxy.keys())[:k] # get k most similar users
+    y_user_ratings_different_movies_from_x = ratings_df[(ratings_df['userId'].isin(first_k_users)) & (~ratings_df['movieId'].isin(user_x_movieIds))] # get ratings of k most similar users y to x for other movies that x has not watched.
+    
     # calculation of formula for recommendation score rxi for each movie not watched by user x
     for movieId in y_user_ratings_different_movies_from_x['movieId']:
         y_rating = y_user_ratings_different_movies_from_x[y_user_ratings_different_movies_from_x['movieId'] == movieId] # get ratings for each movie
@@ -147,7 +173,8 @@ def userToUser(id,simFunc,k,n):
         for rating in y_rating['rating']:
             y.append(rating)
 
-        # normalization add
+        # normalization
+        y = normalizer(y)
 
         numerator = 0
         denominator = 0
@@ -161,13 +188,13 @@ def userToUser(id,simFunc,k,n):
     sorted_rx = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
     first_n_keys = list(sorted_rx.keys())[:n] # get top n keys
     recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    print("Here are your top", n, "recommendations: \n")
+    print("\nHere are your top", n, "recommendations: \n")
     print(recommended_movies['title'])
         
     
         
 # testing
-userToUser(1,"jaccard",128,10)
+userToUser(1,"cosine",128,10)
 
     
 
