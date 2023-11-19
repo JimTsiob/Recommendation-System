@@ -218,7 +218,6 @@ def itemToItem():
 
         
 def main():
-    script_name = sys.argv[0]
     arguments = sys.argv[1:]
     # Print args
     print("Arguments:", arguments)
