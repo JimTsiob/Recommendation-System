@@ -214,6 +214,30 @@ def userToUser(id,simFunc,k,n,directory):
     
 
 def itemToItem():
+    # load datasets
+    ratings_df = pd.read_csv(directory + '/ratings.csv')
+    tags_df = pd.read_csv(directory + '/tags.csv')
+    movies_df = pd.read_csv(directory + '/movies.csv')
+    links_df = pd.read_csv(directory + '/links.csv')
+    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv')
+    # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
+
+    print('ratings_df size: ', ratings_df.size)
+    print('tags_df size: ', tags_df.size)
+    print('movies_df size: ', movies_df.size)
+    print('links_df size: ', links_df.size)
+
+    user_x_ratings = ratings_df[ratings_df['userId'] == id] # get ratings of x user
+
+    # find similarities with all pairs for the items of userx
+    all_other_movie_ratings_other_than_x = ratings_df[ratings_df['userId'] != id]
+    for movieIdX in user_x_ratings:
+        x_movie_ratings = user_x_ratings[user_x_ratings['movieId'] == movieIdX]
+        for movieIdY in all_other_movie_ratings_other_than_x:
+            y_movie_ratings = all_other_movie_ratings_other_than_x[all_other_movie_ratings_other_than_x['movieId'] == movieIdY]
+            # get ratings , put them in x,y lists , sim scores etc , similar procedure as above
+    # get k most similar pairs 
+    # find recommendation scores for the k pairs which user x hasn't rated.
     return
 
         
