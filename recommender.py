@@ -233,11 +233,16 @@ def itemToItem():
     all_other_movie_ratings_other_than_x = ratings_df[ratings_df['userId'] != id]
     for movieIdX in user_x_ratings:
         x_movie_ratings = user_x_ratings[user_x_ratings['movieId'] == movieIdX]
+        x = []
+        for rating in x_movie_ratings['rating']:
+            x.append(rating)
         for movieIdY in all_other_movie_ratings_other_than_x:
             y_movie_ratings = all_other_movie_ratings_other_than_x[all_other_movie_ratings_other_than_x['movieId'] == movieIdY]
             # get ratings , put them in x,y lists , sim scores etc , similar procedure as above
-    # get k most similar pairs 
-    # find recommendation scores for the k pairs which user x hasn't rated.
+    # get k most similar movies 
+    # find recommendation scores for the k movies which user x hasn't rated.
+
+    # recommendation score calculation (example movie with id 5 which userx hasn;t watched): r(userx,5) = rating of userx for item that he has watched * similarity score(movie that x has watched, 5)
     return
 
         
