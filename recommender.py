@@ -102,7 +102,7 @@ def userToUser(id,simFunc,k,n,directory):
     tags_df = pd.read_csv(directory + '/tags.csv')
     movies_df = pd.read_csv(directory + '/movies.csv')
     links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv')
+    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv') # you can only load these two with the full dataset
     # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
 
     print('ratings_df size: ', ratings_df.size)
@@ -193,14 +193,12 @@ def itemToItem(id,simFunc,k,n,directory):
     # (calculate recommendation score essentially) and print out the top n recommendations.
 
     # load datasets
-    # ratings_df = pd.read_csv(directory + '/ratings.csv')
-    # tags_df = pd.read_csv(directory + '/tags.csv')
-    # movies_df = pd.read_csv(directory + '/movies.csv')
-    # links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv')
+    ratings_df = pd.read_csv(directory + '/ratings.csv')
+    tags_df = pd.read_csv(directory + '/tags.csv')
+    movies_df = pd.read_csv(directory + '/movies.csv')
+    links_df = pd.read_csv(directory + '/links.csv')
+    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv') # you can only load these two with the full dataset
     # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
-
-    ratings_df = pd.read_csv(directory + '/u.data')
 
     print('ratings_df size: ', ratings_df.size)
     print('tags_df size: ', tags_df.size)
@@ -229,8 +227,13 @@ def itemToItem(id,simFunc,k,n,directory):
 
     user_x_ratings = ratings_df[ratings_df['userId'] == id] # get ratings of user x
     user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
-    x_movie_ratings_y_users = ratings_df[(ratings_df['movieId'].isin(user_x_ratings['movieId'])) & (ratings_df['userId'] != id)] # get all ratings of users y for the same movies as x
+    x_movie_ratings_all_users = ratings_df[ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all ratings of users y for the same movies as x
     other_movie_ratings_than_x = ratings_df[~ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all ratings of movies that x hasn't watched.
+    
+    for movieId1 in x_movie_ratings_all_users['movieId']:
+        for movieId2 in ratings_df['movieId']:
+            if movieId1 == movieId2:
+                continue
 
     # find similarities with all pairs for the items of userx
     all_other_movie_ratings_other_than_x = ratings_df[ratings_df['userId'] != id]
@@ -309,8 +312,6 @@ def itemToItem(id,simFunc,k,n,directory):
         
 def main():
     arguments = sys.argv[1:]
-    # Print args
-    print("Arguments:", arguments)
     if len(arguments) < 10:
         print("ERROR: please provide all arguments.")
         print('example: python recommender.py -d datasets -n 10 -s jaccard -a user -i 2')
@@ -326,16 +327,15 @@ def main():
         itemToItem(input,similarity_metric,128,number_of_recommendations,arguments[1])
 
 # main()
-fake_df_1 = {'userId': [1, 2, 3, 4],
-        'movieId': ['A', 'B', 'C', 'B'],
-        'rating': [4.5, 6.7, 8.2, 5.0]}
+fake_df_1 = {'userId': [1, 2, 3, 4, 5],
+        'movieId': ['A', 'B', 'C', 'B', 'C'],
+        'rating': [4.5, 6.7, 8.2, 5.0, 8.0]}
 fake_df_1 = pd.DataFrame(fake_df_1)
 fake_df_2 = {'userId': [1, 4 ,5],
         'movieId': ['B', 'C', 'D'],
         'rating': [6.8, 2.4, 8.2]}
 fake_df_2 = pd.DataFrame(fake_df_2)
-on_list = ['userId','movieId']
-merged_df = pd.merge(fake_df_1, fake_df_2, on=on_list, how='inner')
+merged_df = pd.merge(fake_df_1, fake_df_2, on='userId', how='inner')
 print('merge: ',merged_df)
 
 
@@ -348,9 +348,14 @@ ratings_df = pd.read_csv('100_datasets/ratings.csv')
 tags_df = pd.read_csv('100_datasets/tags.csv')
 movies_df = pd.read_csv('100_datasets/movies.csv')
 links_df = pd.read_csv('100_datasets/links.csv')
-user_x_ratings = ratings_df[ratings_df['userId'] == id] # get ratings of user x
+
+user_x_ratings = ratings_df[ratings_df['userId'] == 1] # get ratings of user x
 user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
-x_movie_ratings_y_users = ratings_df[ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all ratings of users y for the same movies as x
+x_movie_ratings_all_users = ratings_df[ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all ratings of users for the same movies as x
 other_movie_ratings_than_x = ratings_df[~ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all ratings of movies that x hasn't watched.
-merged_movie_df = pd.merge(x_movie_ratings_y_users,other_movie_ratings_than_x,on='movieId',how='inner')
-# print('merge')
+
+print(len(x_movie_ratings_all_users))
+print(len(other_movie_ratings_than_x))
+
+print(fake_df_1)
+print(fake_df_2)
