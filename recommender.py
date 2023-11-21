@@ -213,7 +213,12 @@ def userToUser(id,simFunc,k,n,directory):
         
     
 
-def itemToItem():
+def itemToItem(id,simFunc,k,n,directory):
+    # logic here is to find all similarity scores for pairs of movies that user x has watched
+    # and movies that user x hasn't watched. Get the k most similar pairs (highest similarity score) 
+    # then predict the ratings of user x for the other movies
+    # (calculate recommendation score essentially) and print out the top n recommendations.
+
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
     tags_df = pd.read_csv(directory + '/tags.csv')
@@ -227,23 +232,65 @@ def itemToItem():
     print('movies_df size: ', movies_df.size)
     print('links_df size: ', links_df.size)
 
-    user_x_ratings = ratings_df[ratings_df['userId'] == id] # get ratings of x user
+    user_x_ratings = ratings_df[ratings_df['userId'] == id] # get ratings of user x
 
     # find similarities with all pairs for the items of userx
     all_other_movie_ratings_other_than_x = ratings_df[ratings_df['userId'] != id]
-    for movieIdX in user_x_ratings:
-        x_movie_ratings = user_x_ratings[user_x_ratings['movieId'] == movieIdX]
+
+    x_movie_rating_dict = {} # dict that hold movie IDs and their ratings in a list. (key: movieId, value: a list with the movieIds ratings)
+    for movieId in user_x_ratings['movieId']: 
+        rating_list = []
+        movie_ratings = ratings_df[ratings_df['movieId'] == movieId]
+        for rating in movie_ratings['rating']:
+            rating_list.append(rating)
+        x_movie_rating_dict[movieId] = rating_list
+
+    other_than_x_movie_ratings_dict = {} # dict that holds movieIDs (other than the ones X has watched) and their ratings
+    for movieId in all_other_movie_ratings_other_than_x['movieId']:
+        rating_list_y = []
+        movie_ratings_y = ratings_df[ratings_df['movieId'] == movieId]
+        for rating in movie_ratings_y['rating']:
+            rating_list_y.append(rating)
+        other_than_x_movie_ratings_dict[movieId] = rating_list_y
+
+    # calculate similarity score of pairs
+    similarity_scores = {} # dict to contain the pair similarity scores
+    for x_movie_id in x_movie_rating_dict.keys():
         x = []
-        for rating in x_movie_ratings['rating']:
-            x.append(rating)
-        for movieIdY in all_other_movie_ratings_other_than_x:
-            y_movie_ratings = all_other_movie_ratings_other_than_x[all_other_movie_ratings_other_than_x['movieId'] == movieIdY]
-            # get ratings , put them in x,y lists , sim scores etc , similar procedure as above
+        x = x_movie_rating_dict[x_movie_id]
+        for other_than_x_movie_id in other_than_x_movie_ratings_dict.keys():
+            y = []
+            y = other_than_x_movie_ratings_dict[other_than_x_movie_id]
+            sxy = 0 # similarity score
+            if simFunc.lower() == "jaccard":
+                x = normalizer(x)
+                y = normalizer(y)
+                sxy = jaccard(x,y)
+            elif simFunc.lower() == "dice":
+                x = normalizer(x)
+                y = normalizer(y)
+                sxy = dice(x,y)
+            elif simFunc.lower() == "cosine":
+                x = normalizer(x)
+                y = normalizer(y)
+                sxy = cosine(x,y)
+            else:
+                # pearson handles normalization on it's own
+                sxy = pearson(x,y)
+            similarity_scores[(x_movie_id,other_than_x_movie_id)] = sxy
+
+    sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
+    k_movies_similarity_score_dict = {key: sorted_sxy[key] for key in list(sorted_sxy)[:k]} # get k most similar movies
+    most_similar_movie_Ids = [] # get k most similar movie Ids to the movies user x has watched
+    for key in k_movies_similarity_score_dict.keys():
+        most_similar_movie_Ids.append(key[1])
+    # x vector = movie 1 ratings, y vector = movie2 ratings
+    # get ratings , put them in x,y lists , sim scores etc , similar procedure as above
     # get k most similar movies 
     # find recommendation scores for the k movies which user x hasn't rated.
 
     # recommendation score calculation (example movie with id 5 which userx hasn;t watched): r(userx,5) = rating of userx for item that he has watched * similarity score(movie that x has watched, 5)
-    return
+    print('hello')
 
         
 def main():
