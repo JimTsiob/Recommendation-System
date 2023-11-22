@@ -354,6 +354,27 @@ user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x t
 x_movie_ratings_all_users = ratings_df[ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all ratings of users for the same movies as x
 other_movie_ratings_than_x = ratings_df[~ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all ratings of movies that x hasn't watched.
 
+rating_dict = {}
+# for index,row in ratings_df.iterrows():
+#     user_id = row['userId']
+#     movie_id = row['movieId']
+#     rating_num = row['rating']
+#     rating_dict[(user_id,movie_id)] = rating_num
+
+pivot_table = ratings_df.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0)
+x_pivot_table = pivot_table
+pivot_table = pivot_table.T # transpose so movies are the indexes
+pivot_table = pivot_table.fillna(0) # fill all NaN values with 0
+from sklearn.metrics.pairwise import cosine_similarity
+sim_matrix = cosine_similarity(pivot_table)
+print(sim_matrix)
+# for movie1 in pivot_table.index:
+#     for movie2 in pivot_table.index:
+#         movie1_ratings = pivot_table.loc[movie1]
+#         movie2_ratings = pivot_table.loc[movie2]
+
+print('pivot * pivot: ', len(pivot_table) * len(pivot_table))
+
 print(len(x_movie_ratings_all_users))
 print(len(other_movie_ratings_than_x))
 
