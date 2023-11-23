@@ -1,9 +1,11 @@
-import pandas as pd
-import numpy as np
+import pandas as pd # pip install pandas
+import numpy as np # pip install numpy
 import math
 import sys
-from pandarallel import pandarallel
-
+import nltk # pip install nltk
+# nltk.download('stopwords') # <- run this if you don't have the stopwords already on your machine.
+from nltk.corpus import stopwords
+import re
 
 
 
@@ -434,7 +436,7 @@ def itemToItem(id,simFunc,k,n,directory):
 
     sorted_sxy = dict(sorted(x_similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
     k_movies_similarity_score_dict = {key: sorted_sxy[key] for key in list(sorted_sxy)[:k]} # get k most similar movies
-    most_similar_movie_Ids = [] # get k most similar movie Ids to the movies user x has watched
+    most_similar_movie_Ids = [] # get k most similar movie Ids to the movies user x has watched so we can check each of them later on
     for key in k_movies_similarity_score_dict.keys():
         if key[0] in user_x_movieIds:
             most_similar_movie_Ids.append(key[1])
@@ -497,6 +499,11 @@ def calculate_similarity_on_pivot_subset(pivot_1,pivot_2, simFunc):
 
 
 def tagBasedRecommendation(id,simFunc,n,directory):
+    # id: id of movie
+    # simFunc: similarity metric
+    # n: number of recommendations
+    # directory: the directory to load the datasets from
+
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
     tags_df = pd.read_csv(directory + '/tags.csv')
@@ -511,7 +518,7 @@ def tagBasedRecommendation(id,simFunc,n,directory):
     print('links_df size: ', links_df.shape)
     # print('genome_tags_df size: ', genome_tags_df.shape)
     # print('genome_scores_df size: ', genome_scores_df.shape)
-    # movies to check: 60756 -> comedy, 4343
+    # movies to check: 60756 -> comedy, 4343, 2, 31658
 
     
     tags = []
@@ -522,7 +529,7 @@ def tagBasedRecommendation(id,simFunc,n,directory):
     for index,row in tags_df.iterrows():
         movie = row['movieId']
         tag = row['tag']
-        tag_count_keys.append((movie,tag))
+        tag_count_keys.append((movie,tag)) # get movie tag tuple to add as key on dictionary later on
 
     tags_count_dict = {key: 0 for key in tag_count_keys} # dictionary that will hold tags of all movies. key: movieId value: tag
     
@@ -581,6 +588,101 @@ def tagBasedRecommendation(id,simFunc,n,directory):
     print("\nHere are your top", n, "recommendations: \n")
     print(recommended_movies['title'])
 
+def contentBasedRecommendation(id,simFunc,n,directory):
+    # id: id of movie
+    # simFunc: similarity metric
+    # n: number of recommendations
+    # directory: the directory to load the datasets from
+
+    # for testing: 263 has the same word twice in title.
+    # load datasets
+    ratings_df = pd.read_csv(directory + '/ratings.csv')
+    tags_df = pd.read_csv(directory + '/tags.csv')
+    movies_df = pd.read_csv(directory + '/movies.csv')
+    links_df = pd.read_csv(directory + '/links.csv')
+    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv') # you can only load these two with the full dataset
+    # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
+
+    print('ratings_df size: ', ratings_df.shape)
+    print('tags_df size: ', tags_df.shape)
+    print('movies_df size: ', movies_df.shape)
+    print('links_df size: ', links_df.shape)
+    # print('genome_tags_df size: ', genome_tags_df.shape)
+    # print('genome_scores_df size: ', genome_scores_df.shape)
+    
+    
+    title_token_tuples = []
+    x_title = ''
+    TF = {} # term frequency dictionary: key: (title,token) tuple, value: count of token in title
+    stop_words = set(stopwords.words('english'))
+
+    # below loop creates the keys required for TF.
+    for index,row in movies_df.iterrows():
+        title = row['title']
+        title = title.lower()
+        title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
+        title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
+        title_tokens = title.split(' ')
+        title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
+        for token in title_tokens_no_stopwords:
+            title_token_tuple = (title,token)
+            title_token_tuples.append(title_token_tuple)
+
+        if row['movieId'] == id:
+            x_title = title
+
+    # TF and IDF calculation for movie x
+    TF_other_movies = {tuple: 0 for tuple in title_token_tuples}
+    TF_x = {tuple: 0 for tuple in title_token_tuples}
+    TF_x_list = [] # list to hold the counts for similarity calculation
+    for index,row in movies_df.iterrows():
+        title = row['title']
+        title = title.lower()
+        title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
+        title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
+        title_tokens = title.split(' ')
+        title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
+        if title == x_title:
+            for token in title_tokens_no_stopwords:
+                TF_x[(title,token)] += 1
+            for value in TF_x.values():
+                TF_x_list.append(value)
+            # idf below
+            
+            break
+            
+    # TF IDF for other movies, sim score calculation
+    TF_other_movie_list = []
+    for index,row in movies_df.iterrows():
+        title = row['title']
+        if title == x_title:
+            continue
+        title = title.lower()
+        title = re.sub(r" \(\d+\)", "", title)
+        title = re.sub(r" \(.*", "", title)
+        title_tokens = title.split(' ')
+        title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
+        for token in title_tokens_no_stopwords:
+            TF_other_movies[(title,token)] += 1
+        for value in TF_other_movies.values():
+            TF_other_movie_list.append(value)
+        
+        
+
+    # TF_x = []
+    # for key in TF.keys(): # get TF for wanted movie (we'll call it movie x from now on)
+    #     if key[0] == x_title:
+    #         TF_x.append(TF[key])
+
+    # keywords = {title: 0 for title in titles} # dict of keywords , key: keyword , value: count of keyword
+    # for value in TF_x.values():
+    #     TF_x_list.append(value)
+    # TF_x_list.append(TF_x.values())
+    print('list: ',TF_x_list)
+    # print('title:',x_title)
+    # print('len:',len(movies_df['title']))
+
+    return
 
 # ratings_df = pd.read_csv('100_datasets/ratings.csv')
 # pivot_table = ratings_df.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0.5)
@@ -609,6 +711,8 @@ def main():
         itemToItem(input,similarity_metric,128,number_of_recommendations,arguments[1])
     elif arguments[7] == "tag":
         tagBasedRecommendation(input,similarity_metric,number_of_recommendations,arguments[1])
+    elif arguments[7] == "title":
+        contentBasedRecommendation(input,similarity_metric,number_of_recommendations,arguments[1])
 
 main()
 
