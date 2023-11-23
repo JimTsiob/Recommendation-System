@@ -6,6 +6,7 @@ import nltk # pip install nltk
 # nltk.download('stopwords') # <- run this if you don't have the stopwords already on your machine.
 from nltk.corpus import stopwords
 import re
+from sklearn import preprocessing
 
 
 
@@ -74,15 +75,10 @@ dyo = [3.5,6.0,4.0]
 def normalizer(x):
     # x: Iterable (most likely list)
     # normalizer to transform the ratings in the interval [0,1]
-    norm_x = []
     epsilon = 1e-9 # this is to avoid divide by zero error, in case of same size same value vectors.
-    for num in x:
-        if max(x) == min(x): # this is to avoid divide by zero error, could happen with some arrays
-            norm_num = (num - min(x)) / (max(x) - min(x) + epsilon)
-        else:
-            norm_num = (num - min(x)) / (max(x) - min(x))
-        norm_x.append(norm_num)
-    
+    min_x = min(x)
+    max_x = max(x)
+    norm_x = [(x_item - min_x) / (max_x - min_x + epsilon)  for x_item in x]
     return norm_x
 
 def normalizeNum(x,min,max): # used for each separate rating in recommendation score calculation
@@ -612,77 +608,147 @@ def contentBasedRecommendation(id,simFunc,n,directory):
     
     
     title_token_tuples = []
-    x_title = ''
-    TF = {} # term frequency dictionary: key: (title,token) tuple, value: count of token in title
+    x_title = '' # title of wanted movie
     stop_words = set(stopwords.words('english'))
+    token_keys = [] # token keys for IDF dictionary
 
-    # below loop creates the keys required for TF.
+    # below loop creates the keys required for the dictionaries.
     for index,row in movies_df.iterrows():
         title = row['title']
         title = title.lower()
         title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
         title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
+        title = re.sub(r'[^a-zA-Z0-9\s]', '', title) # remove all remaining non-alphanumeric characters such as dots, question marks, dashes etc.
         title_tokens = title.split(' ')
         title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
+        no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
         for token in title_tokens_no_stopwords:
             title_token_tuple = (title,token)
             title_token_tuples.append(title_token_tuple)
+        
+        for token in no_dupe_title_tokens:
+            token_keys.append(token)
 
         if row['movieId'] == id:
             x_title = title
 
-    # TF and IDF calculation for movie x
-    TF_other_movies = {tuple: 0 for tuple in title_token_tuples}
+    
+    TF_other_movies = {tuple: 0 for tuple in title_token_tuples} # term frequency dictionary -> key: (title,token) tuple, value: count of token in title
+    IDF_other_movies = {token: 0 for token in token_keys} # Inverse document frequency dictionary -> key: token, value: count of appearances of each token in the titles column (if one appears two times in a movie we count it once)
+    TF_IDF_other_movies = {tuple:0 for tuple in title_token_tuples} # TF-IDF dictionary -> key: (title,token) tuple, value: tfidf calculation score 
     TF_x = {tuple: 0 for tuple in title_token_tuples}
-    TF_x_list = [] # list to hold the counts for similarity calculation
+    IDF_x = {token: 0 for token in token_keys} 
+    token_count = {token: 0 for token in token_keys}
+    TF_IDF_x = {tuple: 0 for tuple in title_token_tuples}
+    
+
+    # loop used to get token frequency counts for IDF later
     for index,row in movies_df.iterrows():
         title = row['title']
         title = title.lower()
         title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
         title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
+        title = re.sub(r'[^a-zA-Z0-9\s]', '', title) # remove all remaining non-alphanumeric characters such as dots, question marks, dashes etc.
         title_tokens = title.split(' ')
         title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
-        if title == x_title:
-            for token in title_tokens_no_stopwords:
-                TF_x[(title,token)] += 1
-            for value in TF_x.values():
-                TF_x_list.append(value)
-            # idf below
-            
-            break
-            
-    # TF IDF for other movies, sim score calculation
-    TF_other_movie_list = []
+        title_tokens_no_stopwords = list(set(title_tokens_no_stopwords)) # remove duplicates since we want to increment the counter if the word appears at least once but not for all instances.
+        for token in title_tokens_no_stopwords:
+            token_count[token] += 1 # count how many times each token appears in all titles for IDF
+
+    # TF and IDF calculation for movie x
     for index,row in movies_df.iterrows():
         title = row['title']
-        if title == x_title:
-            continue
         title = title.lower()
-        title = re.sub(r" \(\d+\)", "", title)
-        title = re.sub(r" \(.*", "", title)
+        title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
+        title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
+        title = re.sub(r'[^a-zA-Z0-9\s]', '', title) # remove all remaining non-alphanumeric characters such as dots, question marks, dashes etc.
         title_tokens = title.split(' ')
         title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
+        no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
+        if title == x_title:
+            for token in title_tokens_no_stopwords:
+                TF_x[(title,token)] += 1 # Calculate TF
+
+            for token in title_tokens_no_stopwords:
+                TF_x[(title,token)] = TF_x[(title,token)] / len(title_tokens_no_stopwords)
+
+            for token in no_dupe_title_tokens:
+                IDF_x[token] = math.log((len(movies_df['title']) + 1 ) / token_count[token]) + 1 # Calculate IDF
+
+            for token in title_tokens_no_stopwords:
+                TF_IDF_x[(title,token)] = TF_x[(title,token)] * IDF_x[token] # Calculate TF-IDF
+            
+            tf_idf_x_list = []
+            for val in TF_IDF_x.values():
+                tf_idf_x_list.append(val)
+            break
+    
+    # tf_idf_x_list = normalizer(tf_idf_x_list)
+    x_mean = sum(tf_idf_x_list) / len(tf_idf_x_list)
+    x_jacc_dice = [0 if element <= x_mean else 1 for element in tf_idf_x_list] # make vectors binary for jaccard and dice metrics
+
+    # TF-IDF for other movies, sim score calculation
+    similarity_scores = {}
+
+    for index,row in movies_df.iterrows():
+        title = row['title']
+        title = title.lower()
+        title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
+        title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
+        title = re.sub(r'[^a-zA-Z0-9\s]', '', title) # remove all remaining non-alphanumeric characters such as dots, question marks, dashes etc.
+        title_tokens = title.split(' ')
+        title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
+        no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
+        tf_idf_y_list = []
         for token in title_tokens_no_stopwords:
             TF_other_movies[(title,token)] += 1
-        for value in TF_other_movies.values():
-            TF_other_movie_list.append(value)
+            
+        for token in title_tokens_no_stopwords:
+            TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(title_tokens_no_stopwords)
+
+        for token in no_dupe_title_tokens:
+            IDF_other_movies[token] = math.log((len(movies_df['title']) + 1 ) / token_count[token]) + 1
+
+        for token in title_tokens_no_stopwords:
+            # if title == x_title:
+            #     TF_IDF_other_movies[(title,token)] = 0.3 # add zeroes to all instances of the movie x
+            #     continue
+            TF_IDF_other_movies[(title,token)] = TF_other_movies[(title,token)] * IDF_other_movies[token]
+            
+        if title == 'star wars the clone wars':
+                # print('title:',title,'token: ',token,'TF?: ',TF_other_movies[(title,token)],'IDF: ',IDF_other_movies[token], 'TFIDF: ',TF_IDF_other_movies[(title,token)])
+                print('tfidf:',TF_IDF_other_movies[(title,token)])
         
+        for val in TF_IDF_other_movies.values():
+            tf_idf_y_list.append(val)
+
+
+        # tf_idf_y_list = normalizer(tf_idf_y_list)
+        y_mean = 0
+        # print('len:',len(TF_other_movies))
+        y_mean = sum(tf_idf_y_list) / len(tf_idf_y_list)
+        # print('ymean: ',y_mean)
+        y_jacc_dice = [0 if element <= y_mean else 1 for element in tf_idf_y_list] # make vectors binary for jaccard and dice metrics
+
         
+        sxy = 0 # similarity score
+        if simFunc.lower() == "jaccard":
+            sxy = jaccard(x_jacc_dice,y_jacc_dice)
+        elif simFunc.lower() == "dice":
+            sxy = dice(x_jacc_dice,y_jacc_dice)
+        elif simFunc.lower() == "cosine":
+            sxy = cosine(tf_idf_x_list,tf_idf_y_list)
+        else:
+            sxy = pearson(tf_idf_y_list,tf_idf_y_list)
+        
+        similarity_scores[row['movieId']] = sxy
 
-    # TF_x = []
-    # for key in TF.keys(): # get TF for wanted movie (we'll call it movie x from now on)
-    #     if key[0] == x_title:
-    #         TF_x.append(TF[key])
-
-    # keywords = {title: 0 for title in titles} # dict of keywords , key: keyword , value: count of keyword
-    # for value in TF_x.values():
-    #     TF_x_list.append(value)
-    # TF_x_list.append(TF_x.values())
-    print('list: ',TF_x_list)
-    # print('title:',x_title)
-    # print('len:',len(movies_df['title']))
-
-    return
+    sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
+    # print('idf:',IDF_x)
+    first_n_keys = list(sorted_sxy.keys())[:n] # get top n keys
+    recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
+    print("\nHere are your top", n, "recommendations: \n")
+    print(recommended_movies['title'])
 
 # ratings_df = pd.read_csv('100_datasets/ratings.csv')
 # pivot_table = ratings_df.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0.5)
