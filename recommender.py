@@ -6,7 +6,6 @@ import nltk # pip install nltk
 # nltk.download('stopwords') # <- run this if you don't have the stopwords already on your machine.
 from nltk.corpus import stopwords
 import re
-from sklearn import preprocessing
 
 
 
@@ -85,183 +84,6 @@ def normalizeNum(x,min,max): # used for each separate rating in recommendation s
     num = 0
     num = (x-min) / (max - min)
     return num
-
-def calculate_similarity_for_pivot_1_to_10(pt1,pt2,pt3,pt4,pt5,pt6,pt7,pt8,pt9,pt10,simFunc):
-    sim_score_dict = {}
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt4,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt1,pt10,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt4,simFunc))    
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt2,pt10,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt4,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt3,pt10,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt4,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt4,pt10,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt4,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt5,pt10,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt4,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt6,pt10,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt4,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt7,pt10,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt4,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt8,pt10,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt4,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt9,pt10,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt1,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt2,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt3,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt4,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt5,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt6,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt7,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt8,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt9,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt10,pt10,simFunc))
-
-    return sim_score_dict
-
-
-
-def calculate_subset_pivots_from_11_to_17(pt11,pt12,pt13,pt14,pt15,pt16,pt17,simFunc):
-    sim_score_dict = {}
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt11,pt11,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt11,pt12,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt11,pt13,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt11,pt14,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt11,pt15,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt11,pt16,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt11,pt17,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt12,pt11,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt12,pt12,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt12,pt13,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt12,pt14,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt12,pt15,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt12,pt16,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt12,pt17,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt13,pt11,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt13,pt12,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt13,pt13,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt13,pt14,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt13,pt15,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt13,pt16,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt13,pt17,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt14,pt11,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt14,pt12,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt14,pt13,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt14,pt14,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt14,pt15,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt14,pt16,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt14,pt17,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt15,pt11,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt15,pt12,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt15,pt13,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt15,pt14,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt15,pt15,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt15,pt16,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt15,pt17,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt16,pt11,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt16,pt12,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt16,pt13,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt16,pt14,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt16,pt15,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt16,pt16,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt16,pt17,simFunc))
-
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt17,pt11,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt17,pt12,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt17,pt13,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt17,pt14,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt17,pt15,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt17,pt16,simFunc))
-    sim_score_dict.update(calculate_similarity_on_pivot_subset(pt17,pt17,simFunc))
-
-    return sim_score_dict
-
 
 
 def userToUser(id,simFunc,k,n,directory):
@@ -396,38 +218,13 @@ def itemToItem(id,simFunc,k,n,directory):
     # mean-centering
     # mean_centered_pivot = pivot_table.sub(pivot_table.mean(axis=1), axis=0)
 
-    part_1_pt = pivot_table.iloc[:572, :] # large_pivot.iloc[:, :3]
-    part_2_pt = pivot_table.iloc[572:1144, :]
-    part_3_pt = pivot_table.iloc[1144:1716, :]
-    part_4_pt = pivot_table.iloc[1716:2288, :]
-    part_5_pt = pivot_table.iloc[2288:2860, :]
-    part_6_pt = pivot_table.iloc[2860:3432, :]
-    part_7_pt = pivot_table.iloc[3432:4004, :]
-    part_8_pt = pivot_table.iloc[4004:4576, :]
-    part_9_pt = pivot_table.iloc[4576:5148, :]
-    part_10_pt = pivot_table.iloc[5148:5720, :]
-    part_11_pt = pivot_table.iloc[5720:6292, :]
-    part_12_pt = pivot_table.iloc[6292:6864, :]
-    part_13_pt = pivot_table.iloc[6864:7436, :]
-    part_14_pt = pivot_table.iloc[7436:8008, :]
-    part_15_pt = pivot_table.iloc[8008:8580, :]
-    part_16_pt = pivot_table.iloc[8580:9152, :]
-    part_17_pt = pivot_table.iloc[9152:9724, :]
-
-    print('reached before sim_score calc')
-    similarity_scores = {}
-    similarity_scores.update(calculate_similarity_for_pivot_1_to_10(part_1_pt,part_2_pt,part_3_pt,part_4_pt,part_5_pt,part_6_pt,part_7_pt,part_8_pt,part_9_pt,part_10_pt,simFunc))
-    print('done for p1 to p10.')
-    similarity_scores.update(calculate_subset_pivots_from_11_to_17(part_11_pt,part_12_pt,part_13_pt,part_14_pt,part_15_pt,part_16_pt,part_17_pt,simFunc))
-    print('done for p11 to p17.')
-
+    sim_scores_dict = {}
+    sim_scores_dict.update(calculate_similarity_on_pivot(pivot_table,simFunc))
+    
     x_similarity_scores = {} # get only the similarity scores related with movies user x has watched
-    for key in similarity_scores.keys():
-        if key[0] == key[1]:
-            continue # remove all cases of the same movie sim_scores (eg (121,121) = 1)
-
+    for key in sim_scores_dict.keys():
         if (key[0] in user_x_movieIds) or (key[1] in user_x_movieIds):
-            x_similarity_scores[key] = similarity_scores[key]
+            x_similarity_scores[key] = sim_scores_dict[key]
             
 
     sorted_sxy = dict(sorted(x_similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
@@ -462,34 +259,35 @@ def itemToItem(id,simFunc,k,n,directory):
     print(recommended_movies['title'])
 
         
-def calculate_similarity_on_pivot_subset(pivot_1,pivot_2, simFunc):
+def calculate_similarity_on_pivot(pivot, simFunc):
     # function used for calculating the item-to-item similarity in an optimized way.
     # Using the full dataset for this is simply impossible cost-wise as it takes a lot of time
     # even with the 100k dataset.
+    sim_functions = {
+        "jaccard": jaccard,
+        "dice": dice,
+        "cosine": cosine,
+        "pearson": pearson
+    }
+
+    simFunc = simFunc.lower()
+    similarity_func = sim_functions[simFunc]
+
+    ratings = {movie: pivot.loc[movie].tolist() for movie in pivot.index}
+
     similarity_scores = {}
-    for movie1 in pivot_1.index:
-        movie1_ratings = pivot_1.loc[movie1]
-        x = movie1_ratings.tolist()
-        for movie2 in pivot_2.index:
-            movie2_ratings = pivot_2.loc[movie2]
-            y = movie2_ratings.tolist()
-            if movie2 == 1179 and movie1 == 1140:
-                print('x',x)
-                print('y',y)
-            sxy = 0 # similarity score
-            if simFunc.lower() == "jaccard":
-                sxy = jaccard(x,y)
-            elif simFunc.lower() == "dice":
-                sxy = dice(x,y)
-            elif simFunc.lower() == "cosine":
-                x = normalizer(x)
+    for i, movie1 in enumerate(pivot.index):
+        x = ratings[movie1]
+        if simFunc == "cosine":
+            x = normalizer(x)
+        for movie2 in pivot.index[i + 1:]:  # avoid self comparison and redundant comparisons
+            y = ratings[movie2]
+            if simFunc == "cosine":
                 y = normalizer(y)
-                sxy = cosine(x,y)
-            else:
-                # pearson handles normalization on it's own
-                sxy = pearson(x,y)
-            similarity_scores[(movie1,movie2)] = sxy
-        print('iteration for movie',movie1,'is done.')
+            sxy = similarity_func(x, y)
+            similarity_scores[(movie1, movie2)] = sxy
+        print('Iteration for movie', movie1, 'is done.')
+
     return similarity_scores
 
 
@@ -633,13 +431,11 @@ def contentBasedRecommendation(id,simFunc,n,directory):
             x_title = title
 
     
-    TF_other_movies = {tuple: 0 for tuple in title_token_tuples} # term frequency dictionary -> key: (title,token) tuple, value: count of token in title
-    IDF_other_movies = {token: 0 for token in token_keys} # Inverse document frequency dictionary -> key: token, value: count of appearances of each token in the titles column (if one appears two times in a movie we count it once)
-    TF_IDF_other_movies = {tuple:0 for tuple in title_token_tuples} # TF-IDF dictionary -> key: (title,token) tuple, value: tfidf calculation score 
-    TF_x = {tuple: 0 for tuple in title_token_tuples}
-    IDF_x = {token: 0 for token in token_keys} 
-    token_count = {token: 0 for token in token_keys}
-    TF_IDF_x = {tuple: 0 for tuple in title_token_tuples}
+    
+    TF_x = {tuple: 0 for tuple in title_token_tuples} # term frequency dictionary -> key: (title,token) tuple, value: count of token in title
+    IDF_x = {token: 0 for token in token_keys} # Inverse document frequency dictionary -> key: token, value: count of appearances of each token in the titles column (if one appears two times in a movie we count it once)
+    token_count = {token: 0 for token in token_keys} # used for IDF calculation
+    TF_IDF_x = {tuple: 0 for tuple in title_token_tuples} # TF-IDF dictionary -> key: (title,token) tuple, value: tfidf calculation score
     
 
     # loop used to get token frequency counts for IDF later
@@ -669,8 +465,8 @@ def contentBasedRecommendation(id,simFunc,n,directory):
             for token in title_tokens_no_stopwords:
                 TF_x[(title,token)] += 1 # Calculate TF
 
-            for token in title_tokens_no_stopwords:
-                TF_x[(title,token)] = TF_x[(title,token)] / len(title_tokens_no_stopwords)
+            # for token in title_tokens_no_stopwords:
+            #     TF_x[(title,token)] = TF_x[(title,token)] / len(title_tokens_no_stopwords)
 
             for token in no_dupe_title_tokens:
                 IDF_x[token] = math.log((len(movies_df['title']) + 1 ) / token_count[token]) + 1 # Calculate IDF
@@ -683,7 +479,7 @@ def contentBasedRecommendation(id,simFunc,n,directory):
                 tf_idf_x_list.append(val)
             break
     
-    # tf_idf_x_list = normalizer(tf_idf_x_list)
+    tf_idf_x_list = normalizer(tf_idf_x_list)
     x_mean = sum(tf_idf_x_list) / len(tf_idf_x_list)
     x_jacc_dice = [0 if element <= x_mean else 1 for element in tf_idf_x_list] # make vectors binary for jaccard and dice metrics
 
@@ -700,30 +496,30 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
         no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
         tf_idf_y_list = []
+        TF_other_movies = {tuple: 0 for tuple in title_token_tuples} # reset all dictionaries so we can get the values of only the specific movie in the loop
+        IDF_other_movies = {token: 0 for token in token_keys}
+        TF_IDF_other_movies = {tuple:0 for tuple in title_token_tuples}  
         for token in title_tokens_no_stopwords:
             TF_other_movies[(title,token)] += 1
             
-        for token in title_tokens_no_stopwords:
-            TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(title_tokens_no_stopwords)
+        # for token in title_tokens_no_stopwords:
+        #     TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(title_tokens_no_stopwords)
 
         for token in no_dupe_title_tokens:
             IDF_other_movies[token] = math.log((len(movies_df['title']) + 1 ) / token_count[token]) + 1
 
         for token in title_tokens_no_stopwords:
-            # if title == x_title:
-            #     TF_IDF_other_movies[(title,token)] = 0.3 # add zeroes to all instances of the movie x
-            #     continue
+            if title == x_title:
+                TF_IDF_other_movies[(title,token)] = 1 # add zeroes to all instances of the movie x
+                continue
             TF_IDF_other_movies[(title,token)] = TF_other_movies[(title,token)] * IDF_other_movies[token]
             
-        if title == 'star wars the clone wars':
-                # print('title:',title,'token: ',token,'TF?: ',TF_other_movies[(title,token)],'IDF: ',IDF_other_movies[token], 'TFIDF: ',TF_IDF_other_movies[(title,token)])
-                print('tfidf:',TF_IDF_other_movies[(title,token)])
         
         for val in TF_IDF_other_movies.values():
             tf_idf_y_list.append(val)
 
 
-        # tf_idf_y_list = normalizer(tf_idf_y_list)
+        tf_idf_y_list = normalizer(tf_idf_y_list)
         y_mean = 0
         # print('len:',len(TF_other_movies))
         y_mean = sum(tf_idf_y_list) / len(tf_idf_y_list)
@@ -744,12 +540,21 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         similarity_scores[row['movieId']] = sxy
 
     sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
-    # print('idf:',IDF_x)
+    print('idf:',len(IDF_x))
+    print('tf: ', len(TF_x))
     first_n_keys = list(sorted_sxy.keys())[:n] # get top n keys
     recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
     print("\nHere are your top", n, "recommendations: \n")
     print(recommended_movies['title'])
 
+def hybrid(userId,movieId,simFunc,k,n):
+    # userId : the id of the user (for user to user)
+    # movieId : the id of the movie (for any other recommendation algorithm)
+    # simFunc: similarity metric
+    # k: most similar users for user to user
+    # n: number of recommendations
+
+    return
 # ratings_df = pd.read_csv('100_datasets/ratings.csv')
 # pivot_table = ratings_df.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0.5)
 # pivot_table = pivot_table.T # transpose so movies are the indexes
