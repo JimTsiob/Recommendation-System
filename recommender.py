@@ -115,8 +115,7 @@ def userToUser(id,simFunc,k,n,directory):
     rx = {} # dictionary to store recommendation scores key: movieId , value: score
     
     x_rating_dict = dict(zip(user_x_ratings['movieId'], user_x_ratings['rating']))
-     
-
+    x_movies = list(x_rating_dict.keys()) # we'll use the movies of user x compared with each user's movies with similar movies for Jaccard and Dice.
     # find similarity scores for all users y with user x
     similarity_scores = {} # dictionary to hold sim scores , key: userId value: similarity score
     for userId in movie_ratings_y_users['userId']:
@@ -127,6 +126,7 @@ def userToUser(id,simFunc,k,n,directory):
         # the dictionary below is used to keep only the ratings of the movies that both x and y have watched.
         y_rating_dict = dict(zip(y_similar_movie_rating['movieId'], y_similar_movie_rating['rating'])) # y rating dictionary, key: movieId , value: rating
         common_ratings = set(x_rating_dict.keys()).intersection(y_rating_dict.keys())
+        y_movies = list(y_rating_dict.keys()) 
         common_ratings_dict = {key: (x_rating_dict[key], y_rating_dict[key]) for key in common_ratings}
         for val in common_ratings_dict.values():
             x.append(val[0])
@@ -134,13 +134,9 @@ def userToUser(id,simFunc,k,n,directory):
 
         sxy = 0 # similarity score
         if simFunc.lower() == "jaccard":
-            x = normalizer(x)
-            y = normalizer(y)
-            sxy = jaccard(x,y)
+            sxy = jaccard(x_movies,y_movies)
         elif simFunc.lower() == "dice":
-            x = normalizer(x)
-            y = normalizer(y)
-            sxy = dice(x,y)
+            sxy = dice(x_movies,y_movies)
         elif simFunc.lower() == "cosine":
             x = normalizer(x)
             y = normalizer(y)
@@ -407,12 +403,16 @@ def contentBasedRecommendation(id,simFunc,n,directory):
     
     title_token_tuples = []
     x_title = '' # title of wanted movie
+    x_title_full = '' # title of wanted movie, without pre-processing, used for calculation of other movies
     stop_words = set(stopwords.words('english'))
     token_keys = [] # token keys for IDF dictionary
 
     # below loop creates the keys required for the dictionaries.
     for index,row in movies_df.iterrows():
         title = row['title']
+        if row['movieId'] == id:
+            x_title_full = title
+
         title = title.lower()
         title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
         title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
@@ -461,15 +461,19 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         title_tokens = title.split(' ')
         title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
         no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
+        genres = row['genres']
+        genres = genres.lower()
+        genre_tokens = genres.split('|')
+        total_tokens_x = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
         if title == x_title:
             for token in title_tokens_no_stopwords:
                 TF_x[(title,token)] += 1 # Calculate TF
 
-            # for token in title_tokens_no_stopwords:
-            #     TF_x[(title,token)] = TF_x[(title,token)] / len(title_tokens_no_stopwords)
+            for token in title_tokens_no_stopwords:
+                TF_x[(title,token)] = TF_x[(title,token)] / len(title_tokens_no_stopwords)
 
             for token in no_dupe_title_tokens:
-                IDF_x[token] = math.log((len(movies_df['title']) + 1 ) / token_count[token]) + 1 # Calculate IDF
+                IDF_x[token] = math.log(len(movies_df['title']) / token_count[token]) # Calculate IDF
 
             for token in title_tokens_no_stopwords:
                 TF_IDF_x[(title,token)] = TF_x[(title,token)] * IDF_x[token] # Calculate TF-IDF
@@ -480,14 +484,15 @@ def contentBasedRecommendation(id,simFunc,n,directory):
             break
     
     tf_idf_x_list = normalizer(tf_idf_x_list)
-    x_mean = sum(tf_idf_x_list) / len(tf_idf_x_list)
-    x_jacc_dice = [0 if element <= x_mean else 1 for element in tf_idf_x_list] # make vectors binary for jaccard and dice metrics
-
+    x_jacc_dice = total_tokens_x # used for jaccard and dice metrics
+    
     # TF-IDF for other movies, sim score calculation
     similarity_scores = {}
 
     for index,row in movies_df.iterrows():
         title = row['title']
+        if title == x_title_full: # make sure that we remove the similarity score of moviex with itself
+            continue
         title = title.lower()
         title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
         title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
@@ -495,6 +500,10 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         title_tokens = title.split(' ')
         title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
         no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
+        genres = row['genres']
+        genres = genres.lower()
+        genre_tokens = genres.split('|')
+        total_tokens_y = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
         tf_idf_y_list = []
         TF_other_movies = {tuple: 0 for tuple in title_token_tuples} # reset all dictionaries so we can get the values of only the specific movie in the loop
         IDF_other_movies = {token: 0 for token in token_keys}
@@ -502,16 +511,16 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         for token in title_tokens_no_stopwords:
             TF_other_movies[(title,token)] += 1
             
-        # for token in title_tokens_no_stopwords:
-        #     TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(title_tokens_no_stopwords)
+        for token in title_tokens_no_stopwords:
+            TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(title_tokens_no_stopwords)
 
         for token in no_dupe_title_tokens:
-            IDF_other_movies[token] = math.log((len(movies_df['title']) + 1 ) / token_count[token]) + 1
+            IDF_other_movies[token] = math.log(len(movies_df['title']) / token_count[token])
 
         for token in title_tokens_no_stopwords:
-            if title == x_title:
-                TF_IDF_other_movies[(title,token)] = 1 # add zeroes to all instances of the movie x
-                continue
+            # if title == x_title:
+            #     TF_IDF_other_movies[(title,token)] = 1 # add zeroes to all instances of the movie x
+            #     continue
             TF_IDF_other_movies[(title,token)] = TF_other_movies[(title,token)] * IDF_other_movies[token]
             
         
@@ -520,11 +529,7 @@ def contentBasedRecommendation(id,simFunc,n,directory):
 
 
         tf_idf_y_list = normalizer(tf_idf_y_list)
-        y_mean = 0
-        # print('len:',len(TF_other_movies))
-        y_mean = sum(tf_idf_y_list) / len(tf_idf_y_list)
-        # print('ymean: ',y_mean)
-        y_jacc_dice = [0 if element <= y_mean else 1 for element in tf_idf_y_list] # make vectors binary for jaccard and dice metrics
+        y_jacc_dice = total_tokens_y
 
         
         sxy = 0 # similarity score
