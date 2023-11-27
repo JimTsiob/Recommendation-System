@@ -192,42 +192,74 @@ def itemToItem(id,simFunc,k,directory):
     # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
     # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
 
-    print('ratings_df size: ', ratings_df.size)
-    print('tags_df size: ', tags_df.size)
-    print('movies_df size: ', movies_df.size)
-    print('links_df size: ', links_df.size)
+    print('ratings_df size: ', ratings_df.shape)
+    print('tags_df size: ', tags_df.shape)
+    print('movies_df size: ', movies_df.shape)
+    print('links_df size: ', links_df.shape)
     # print('genome_tags_df size: ', genome_tags_df.size)
     # print('genome_scores_df size: ', genome_scores_df.size)
 
     user_x_ratings = ratings_df[ratings_df['userId'] == id] # get ratings of user x
     user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
-    x_movie_ratings_all_users = ratings_df[ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all ratings of users y for the same movies as x
-    other_movie_ratings_than_x = ratings_df[~ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all ratings of movies that x hasn't watched.
+    movie_ratings_y_users = ratings_df[(ratings_df['movieId'].isin(user_x_ratings['movieId'])) & (ratings_df['userId'] != id)]
+    user_y_ids = movie_ratings_y_users['userId'].unique() # get y user ids to get the movies that x hasn't watched
+    y_user_movies_other_than_x = ratings_df[(ratings_df['userId'].isin(user_y_ids)) & (~ratings_df['movieId'].isin(user_x_movieIds))]
     
-    # separate main dataset into smaller pivot tables in order to compute similarity metrics for all pairs of movies
-    pivot_table = ratings_df.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0)
+    # make pivot table from movies of similar users to x which
+    pivot_table = y_user_movies_other_than_x.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0)
     pivot_table = pivot_table.T # transpose so movies are the indexes
-
+ 
+    ratings = {movie: pivot_table.loc[movie].tolist() for movie in pivot_table.index} # get all ratings from pivot
     # mean-centering
     # mean_centered_pivot = pivot_table.sub(pivot_table.mean(axis=1), axis=0)
 
-    sim_scores_dict = {}
-    sim_scores_dict.update(calculate_similarity_on_pivot(pivot_table,simFunc))
-    
-    x_similarity_scores = {} # get only the similarity scores related with movies user x has watched
-    for key in sim_scores_dict.keys():
-        if (key[0] in user_x_movieIds) or (key[1] in user_x_movieIds):
-            x_similarity_scores[key] = sim_scores_dict[key]
+
+    similarity_scores = {}
+    for x_movieId in user_x_ratings['movieId']:
+        x_movie_ratings = ratings_df[ratings_df['movieId'] == x_movieId]
+        x = []
+        for rating in x_movie_ratings['rating']:    
+            x.append(rating)
+
+        x_movie_users = []        
+        for userId in x_movie_ratings['userId']:
+            x_movie_users.append(userId)
+        x_movie_users.append(id) # get all users who have watched movie x for jaccard and dice
+
+        for i, y_movieId in enumerate(pivot_table.index):
+            y = ratings[y_movieId]
+            # optimised_y = [rating > 0 for rating in y]
+            y_movie_df = ratings_df[ratings_df['movieId'] == y_movieId]
+            y_movie_users = []
+            for userId in y_movie_df['userId']:
+                y_movie_users.append(userId)
+             
+            sxy = 0 # similarity score
+            if simFunc.lower() == "jaccard":
+                sxy = jaccard(x_movie_users,y_movie_users)
+            elif simFunc.lower() == "dice":
+                sxy = dice(x_movie_users,y_movie_users)
+            elif simFunc.lower() == "cosine":
+                x = normalizer(x)
+                y = normalizer(y)
+                sxy = cosine(x,y)
+            else:
+                # pearson handles normalization on it's own
+                sxy = pearson(x,y)
+            
+            similarity_scores[(x_movieId,y_movieId)] = sxy
+        print('done for movie: ', x_movieId)
             
 
-    sorted_sxy = dict(sorted(x_similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
+    sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
     k_movies_similarity_score_dict = {key: sorted_sxy[key] for key in list(sorted_sxy)[:k]} # get k most similar movies
     most_similar_movie_Ids = [] # get k most similar movie Ids to the movies user x has watched so we can check each of them later on
     for key in k_movies_similarity_score_dict.keys():
-        if key[0] in user_x_movieIds:
-            most_similar_movie_Ids.append(key[1])
-        elif key[1] in user_x_movieIds:
-            most_similar_movie_Ids.append(key[0])
+        most_similar_movie_Ids.append(key[1]) # take opposite key since this is the similar movie 
+
+    x_movie_keys = []
+    for key in k_movies_similarity_score_dict.keys():
+        x_movie_keys.append(key[0]) # get keys of x movies that correlate with the most similar y_movies
 
     most_similar_movie_df = ratings_df[ratings_df['movieId'].isin(most_similar_movie_Ids)] # filter out all other movies apart from the k most similar
 
@@ -237,11 +269,14 @@ def itemToItem(id,simFunc,k,directory):
         numerator = 0
         denominator = 0
         rxi = 0
-        for index,row in user_x_ratings.iterrows():
+        for index,row in user_x_ratings.iterrows(): # den pane me th seira ta keys tou x ,y -> #FIX_ME
             x_rating = row['rating']
             x_movieId = row['movieId']
-            numerator += x_rating * k_movies_similarity_score_dict[(x_movieId,movieId)] # rating of movie x has watched * similarity_score(movie x has watched,movie to be predicted)
-            denominator += k_movies_similarity_score_dict[(x_movieId,movieId)] # sum of similarity scores of movies that x has watched with the movie to be predicted
+            if x_movieId in x:
+                numerator += x_rating * k_movies_similarity_score_dict[(x_movieId,movieId)] # rating of movie x has watched * similarity_score(movie x has watched,movie to be predicted)
+                denominator += k_movies_similarity_score_dict[(x_movieId,movieId)] # sum of similarity scores of movies that x has watched with the movie to be predicted
+            else:
+                continue
         rxi = numerator / denominator
         recommendation_scores[movieId] = rxi
 
@@ -595,7 +630,7 @@ def hybrid(userId,movieId,simFunc,k,n,directory):
     common_movie_ids = set(first_n_keys_u2u) & set(first_n_keys_tag) & set(first_n_keys_tfidf)
 
     # if there are no common movies simply sort all scores and send the best ones back
-    if (len(common_movie_ids) == 0):
+    if (len(common_movie_ids) < n):
         hybrid_final_scores = {}
         hybrid_final_scores.update(sorted_u2u)
         hybrid_final_scores.update(sorted_tfidf)
