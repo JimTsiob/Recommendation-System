@@ -39,6 +39,7 @@ def cosine(a,b):
     denominator = (root1 * root2) + epsilon
     return numerator / denominator
 
+
 def pearson(x,y): 
     n = len(x) # they're always same size since I get ratings of movies both users rated.
     epsilon = 1e-9 # this is to avoid divide by zero error, in case of same size same value vectors.
@@ -86,24 +87,23 @@ def normalizeNum(x,min,max): # used for each separate rating in recommendation s
     return num
 
 
-def userToUser(id,simFunc,k,n,directory):
+def userToUser(id,simFunc,k,directory):
     # id: id of the user for recommendation
     # simFunc: the similarity function used
     # k: k users with ratings most similar to user for recommendation
-    # n: return top n recommendations
 
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
     tags_df = pd.read_csv(directory + '/tags.csv')
     movies_df = pd.read_csv(directory + '/movies.csv')
     links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
+    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
+    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
 
-    print('ratings_df size: ', ratings_df.size)
-    print('tags_df size: ', tags_df.size)
-    print('movies_df size: ', movies_df.size)
-    print('links_df size: ', links_df.size)
+    print('ratings_df size: ', ratings_df.shape)
+    print('tags_df size: ', tags_df.shape)
+    print('movies_df size: ', movies_df.shape)
+    print('links_df size: ', links_df.shape)
     # print('genome_tags_df size: ', genome_tags_df.size)
     # print('genome_scores_df size: ', genome_scores_df.size)
 
@@ -173,15 +173,12 @@ def userToUser(id,simFunc,k,n,directory):
         rxi = numerator_sums[key] / denominator
         rx[key] = rxi
     
-    sorted_rx = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
-    first_n_keys = list(sorted_rx.keys())[:n] # get top n keys
-    recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    print("\nHere are your top", n, "recommendations: \n")
-    print(recommended_movies['title'])
+    
+    return rx
         
     
 
-def itemToItem(id,simFunc,k,n,directory):
+def itemToItem(id,simFunc,k,directory):
     # logic here is to find all similarity scores for pairs of movies that user x has watched
     # and movies that user x hasn't watched. Get the k most similar pairs (highest similarity score) 
     # then predict the ratings of user x for the other movies
@@ -192,8 +189,8 @@ def itemToItem(id,simFunc,k,n,directory):
     tags_df = pd.read_csv(directory + '/tags.csv')
     movies_df = pd.read_csv(directory + '/movies.csv')
     links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
+    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
+    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
 
     print('ratings_df size: ', ratings_df.size)
     print('tags_df size: ', tags_df.size)
@@ -248,11 +245,7 @@ def itemToItem(id,simFunc,k,n,directory):
         rxi = numerator / denominator
         recommendation_scores[movieId] = rxi
 
-    sorted_rec_scores = dict(sorted(recommendation_scores.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
-    first_n_keys = list(sorted_rec_scores.keys())[:n] # get top n keys
-    recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    print("\nHere are your top", n, "recommendations: \n")
-    print(recommended_movies['title'])
+    return recommendation_scores
 
         
 def calculate_similarity_on_pivot(pivot, simFunc):
@@ -288,19 +281,22 @@ def calculate_similarity_on_pivot(pivot, simFunc):
 
 
 
-def tagBasedRecommendation(id,simFunc,n,directory):
+def tagBasedRecommendation(id,simFunc,directory):
     # id: id of movie
     # simFunc: similarity metric
     # n: number of recommendations
     # directory: the directory to load the datasets from
+
+    # Here, we get the tags for each movie, get their counts, compare them and get the most similar movies based on tag count.
+    # for Jaccard and Dice we get the tags that have tag count >= 1
 
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
     tags_df = pd.read_csv(directory + '/tags.csv')
     movies_df = pd.read_csv(directory + '/movies.csv')
     links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
+    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
+    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
 
     print('ratings_df size: ', ratings_df.shape)
     print('tags_df size: ', tags_df.shape)
@@ -313,12 +309,14 @@ def tagBasedRecommendation(id,simFunc,n,directory):
     
     tags = []
     for tag in tags_df['tag']:
+        tag = tag.lower()
         tags.append(tag)
 
     tag_count_keys = []
     for index,row in tags_df.iterrows():
         movie = row['movieId']
         tag = row['tag']
+        tag = tag.lower()
         tag_count_keys.append((movie,tag)) # get movie tag tuple to add as key on dictionary later on
 
     tags_count_dict = {key: 0 for key in tag_count_keys} # dictionary that will hold tags of all movies. key: movieId value: tag
@@ -327,6 +325,7 @@ def tagBasedRecommendation(id,simFunc,n,directory):
     for index,row in tags_df.iterrows():
         movie = row['movieId']
         tag = row['tag']
+        tag = tag.lower()
         tags_count_dict[movie,tag] += 1
     
     x_movie_tag_dict = {tag: 0 for tag in tags} # dictionary for tags of wanted movie (I'm calling it x movie). key: tag , value: count of tag
@@ -372,26 +371,24 @@ def tagBasedRecommendation(id,simFunc,n,directory):
         
         similarity_scores[movieId] = sxy
 
-    sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
-    first_n_keys = list(sorted_sxy.keys())[:n] # get top n keys
-    recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    print("\nHere are your top", n, "recommendations: \n")
-    print(recommended_movies['title'])
+    
+    return similarity_scores
+    
 
-def contentBasedRecommendation(id,simFunc,n,directory):
+def contentBasedRecommendation(id,simFunc,directory):
     # id: id of movie
     # simFunc: similarity metric
     # n: number of recommendations
     # directory: the directory to load the datasets from
 
-    # for testing: 263 has the same word twice in title.
+    # for testing: 263,61160 have the same word twice in title.
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
     tags_df = pd.read_csv(directory + '/tags.csv')
     movies_df = pd.read_csv(directory + '/movies.csv')
     links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
+    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
+    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
 
     print('ratings_df size: ', ratings_df.shape)
     print('tags_df size: ', tags_df.shape)
@@ -420,11 +417,16 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         title_tokens = title.split(' ')
         title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
         no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
-        for token in title_tokens_no_stopwords:
+        genres = row['genres']
+        genres = genres.lower()
+        genre_tokens = genres.split('|')
+        total_tokens_no_dupes = no_dupe_title_tokens + genre_tokens
+        total_tokens_dupes = title_tokens_no_stopwords + genre_tokens
+        for token in total_tokens_dupes: # this is for TF initialization
             title_token_tuple = (title,token)
             title_token_tuples.append(title_token_tuple)
         
-        for token in no_dupe_title_tokens:
+        for token in total_tokens_no_dupes: # this is for IDF and TFIDF initialization
             token_keys.append(token)
 
         if row['movieId'] == id:
@@ -433,9 +435,9 @@ def contentBasedRecommendation(id,simFunc,n,directory):
     
     
     TF_x = {tuple: 0 for tuple in title_token_tuples} # term frequency dictionary -> key: (title,token) tuple, value: count of token in title
-    IDF_x = {token: 0 for token in token_keys} # Inverse document frequency dictionary -> key: token, value: count of appearances of each token in the titles column (if one appears two times in a movie we count it once)
+    IDF_x = {token: 0 for token in token_keys} # Inverse document frequency dictionary -> key: token, value: count of appearances of each token in the titles/genres column (if one appears two times in a movie we count it once)
     token_count = {token: 0 for token in token_keys} # used for IDF calculation
-    TF_IDF_x = {tuple: 0 for tuple in title_token_tuples} # TF-IDF dictionary -> key: (title,token) tuple, value: tfidf calculation score
+    TF_IDF_x = {token: 0 for token in token_keys} # TF-IDF dictionary -> key: (title,token) tuple, value: tfidf calculation score
     
 
     # loop used to get token frequency counts for IDF later
@@ -448,8 +450,12 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         title_tokens = title.split(' ')
         title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
         title_tokens_no_stopwords = list(set(title_tokens_no_stopwords)) # remove duplicates since we want to increment the counter if the word appears at least once but not for all instances.
-        for token in title_tokens_no_stopwords:
-            token_count[token] += 1 # count how many times each token appears in all titles for IDF
+        genres = row['genres']
+        genres = genres.lower()
+        genre_tokens = genres.split('|')
+        total_tokens = title_tokens_no_stopwords + genre_tokens
+        for token in total_tokens:
+            token_count[token] += 1 # count how many times each token appears in all titles/genres for IDF
 
     # TF and IDF calculation for movie x
     for index,row in movies_df.iterrows():
@@ -464,29 +470,35 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         genres = row['genres']
         genres = genres.lower()
         genre_tokens = genres.split('|')
-        total_tokens_x = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
+        total_tokens_dupe_x = title_tokens_no_stopwords + genre_tokens 
+        total_tokens_x_no_dupes = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
         if title == x_title:
-            for token in title_tokens_no_stopwords:
+            for token in total_tokens_dupe_x:
                 TF_x[(title,token)] += 1 # Calculate TF
 
-            for token in title_tokens_no_stopwords:
-                TF_x[(title,token)] = TF_x[(title,token)] / len(title_tokens_no_stopwords)
+            # for token in total_tokens_dupe_x: # alternative form for TF-IDF , doesn't change results
+            #     TF_x[(title,token)] = TF_x[(title,token)] / len(total_tokens_dupe_x)
 
-            for token in no_dupe_title_tokens:
-                IDF_x[token] = math.log(len(movies_df['title']) / token_count[token]) # Calculate IDF
+            for token in total_tokens_x_no_dupes:
+                IDF_x[token] = math.log(len(movies_df) / token_count[token]) # Calculate IDF
 
-            for token in title_tokens_no_stopwords:
-                TF_IDF_x[(title,token)] = TF_x[(title,token)] * IDF_x[token] # Calculate TF-IDF
+            for token in total_tokens_x_no_dupes:
+                TF_IDF_x[token] = TF_x[(title,token)] * IDF_x[token] # Calculate TF-IDF
             
-            tf_idf_x_list = []
-            for val in TF_IDF_x.values():
-                tf_idf_x_list.append(val)
+            
             break
+
+    x_jacc_dice = []
     
-    tf_idf_x_list = normalizer(tf_idf_x_list)
-    x_jacc_dice = total_tokens_x # used for jaccard and dice metrics
-    
-    # TF-IDF for other movies, sim score calculation
+    for token in TF_IDF_x.keys():
+        if TF_IDF_x[token] > 0:
+            x_jacc_dice.append(token)
+
+    tf_idf_x_list = []
+    for key in TF_IDF_x.keys():
+            tf_idf_x_list.append(TF_IDF_x[key])
+
+
     similarity_scores = {}
 
     for index,row in movies_df.iterrows():
@@ -503,33 +515,34 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         genres = row['genres']
         genres = genres.lower()
         genre_tokens = genres.split('|')
-        total_tokens_y = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
+        total_tokens_y_no_dupes = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
+        total_tokens_y_dupes = title_tokens_no_stopwords + genre_tokens
         tf_idf_y_list = []
         TF_other_movies = {tuple: 0 for tuple in title_token_tuples} # reset all dictionaries so we can get the values of only the specific movie in the loop
         IDF_other_movies = {token: 0 for token in token_keys}
-        TF_IDF_other_movies = {tuple:0 for tuple in title_token_tuples}  
-        for token in title_tokens_no_stopwords:
+        TF_IDF_other_movies = {token: 0 for token in token_keys}  
+        for token in total_tokens_y_dupes:
             TF_other_movies[(title,token)] += 1
             
-        for token in title_tokens_no_stopwords:
-            TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(title_tokens_no_stopwords)
+        # for token in total_tokens_y_dupes:
+        #     TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(total_tokens_y_dupes)
 
-        for token in no_dupe_title_tokens:
-            IDF_other_movies[token] = math.log(len(movies_df['title']) / token_count[token])
+        for token in total_tokens_y_no_dupes:
+            IDF_other_movies[token] = math.log(len(movies_df) / token_count[token])
 
-        for token in title_tokens_no_stopwords:
-            # if title == x_title:
-            #     TF_IDF_other_movies[(title,token)] = 1 # add zeroes to all instances of the movie x
-            #     continue
-            TF_IDF_other_movies[(title,token)] = TF_other_movies[(title,token)] * IDF_other_movies[token]
+        for token in total_tokens_y_no_dupes:
+            TF_IDF_other_movies[token] = TF_other_movies[(title,token)] * IDF_other_movies[token]
             
         
-        for val in TF_IDF_other_movies.values():
-            tf_idf_y_list.append(val)
+        for key in TF_IDF_other_movies.keys():
+            tf_idf_y_list.append(TF_IDF_other_movies[key])
 
 
-        tf_idf_y_list = normalizer(tf_idf_y_list)
-        y_jacc_dice = total_tokens_y
+        y_jacc_dice = []
+        # tf_idf_y_list = normalizer(tf_idf_y_list)
+        for token in TF_IDF_other_movies.keys():
+            if TF_IDF_other_movies[token] > 0:
+                y_jacc_dice.append(token)
 
         
         sxy = 0 # similarity score
@@ -540,24 +553,47 @@ def contentBasedRecommendation(id,simFunc,n,directory):
         elif simFunc.lower() == "cosine":
             sxy = cosine(tf_idf_x_list,tf_idf_y_list)
         else:
-            sxy = pearson(tf_idf_y_list,tf_idf_y_list)
-        
+            sxy = pearson(tf_idf_x_list,tf_idf_y_list)            
+
         similarity_scores[row['movieId']] = sxy
 
-    sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
-    print('idf:',len(IDF_x))
-    print('tf: ', len(TF_x))
-    first_n_keys = list(sorted_sxy.keys())[:n] # get top n keys
-    recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    print("\nHere are your top", n, "recommendations: \n")
-    print(recommended_movies['title'])
+    return similarity_scores
 
-def hybrid(userId,movieId,simFunc,k,n):
+def hybrid(userId,movieId,simFunc,k,n,directory):
     # userId : the id of the user (for user to user)
     # movieId : the id of the movie (for any other recommendation algorithm)
     # simFunc: similarity metric
     # k: most similar users for user to user
     # n: number of recommendations
+
+    scores_u2u = userToUser(userId,simFunc,k,directory)
+    scores_tag = tagBasedRecommendation(movieId,simFunc,directory)
+
+    sorted_u2u = dict(sorted(scores_u2u.items(), key=lambda item: item[1], reverse=True)) 
+    sorted_tag = dict(sorted(scores_tag.items(), key=lambda item: item[1], reverse=True))
+    first_n_keys_u2u = list(sorted_u2u.keys())[:n]
+    first_n_values_u2u = list(sorted_u2u.values())[:n]
+
+    first_n_keys_tag = list(sorted_tag.keys())[:n]
+    first_n_values_tag = list(sorted_tag.values())[:n]
+
+    print(first_n_keys_u2u, " - ", first_n_values_u2u)
+    print(first_n_keys_tag ," ... ", first_n_values_tag)
+
+    scores_tfidf = contentBasedRecommendation(movieId,simFunc,directory)
+
+    # sort scores in descending order
+    
+    sorted_tfidf = dict(sorted(scores_tfidf.items(), key=lambda item: item[1], reverse=True))
+
+    # get top n values for all scores
+    
+
+    first_n_values_tfidf = list(sorted_tfidf.values())[:n]
+
+    # Perform linear combination on the top n scores
+    
+    # df['linear_combination'] = alpha * df['column1'] + beta * df['column2'] + gamma * df['column3']
 
     return
 # ratings_df = pd.read_csv('100_datasets/ratings.csv')
@@ -581,14 +617,44 @@ def main():
     input = int(arguments[9])
     similarity_metric = arguments[5]
 
+    movies_df = pd.read_csv(arguments[1] + '/movies.csv') # load this to show recommended movies as output
+
     if arguments[7] == "user":
-        userToUser(input,similarity_metric,128,number_of_recommendations,arguments[1])
+        rx = userToUser(input,similarity_metric,128,arguments[1])
+        sorted_rx = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
+        first_n_keys = list(sorted_rx.keys())[:number_of_recommendations] # get top n keys
+        recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
+        print("\nHere are your top", number_of_recommendations, "recommendations: \n")
+        print(recommended_movies['title'])
     elif arguments[7] == "item":
-        itemToItem(input,similarity_metric,128,number_of_recommendations,arguments[1])
+        recommendation_scores = itemToItem(input,similarity_metric,128,arguments[1])
+        sorted_rec_scores = dict(sorted(recommendation_scores.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
+        first_n_keys = list(sorted_rec_scores.keys())[:number_of_recommendations] # get top n keys
+        recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
+        print("\nHere are your top", number_of_recommendations, "recommendations: \n")
+        print(recommended_movies['title'])
     elif arguments[7] == "tag":
-        tagBasedRecommendation(input,similarity_metric,number_of_recommendations,arguments[1])
+        similarity_scores = tagBasedRecommendation(input,similarity_metric,arguments[1])
+        sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
+        first_n_keys = list(sorted_sxy.keys())[:number_of_recommendations] # get top n keys
+        recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
+        print("\nHere are your top", number_of_recommendations, "recommendations: \n")
+        print(recommended_movies['title'])
     elif arguments[7] == "title":
-        contentBasedRecommendation(input,similarity_metric,number_of_recommendations,arguments[1])
+        similarity_scores = contentBasedRecommendation(input,similarity_metric,arguments[1])
+        sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
+        first_n_keys = list(sorted_sxy.keys())[:number_of_recommendations] # get top n keys
+        recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
+        print("\nHere are your top", number_of_recommendations, "recommendations: \n")
+        print(recommended_movies['title'])
+    elif arguments[7] == "hybrid":
+        if len(arguments) < 11:
+            print("ERROR: please provide all arguments.")
+            print('example: python recommender.py -d datasets -n 10 -s hybrid -a user -i 2 1')
+            return
+        user_input = int(arguments[9])
+        item_input = int(arguments[10])
+        hybrid_scores = hybrid(user_input,item_input,similarity_metric,128,number_of_recommendations,arguments[1])
 
 main()
 
