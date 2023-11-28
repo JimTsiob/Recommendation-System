@@ -272,11 +272,12 @@ def itemToItem(id,simFunc,k,directory):
         for index,row in user_x_ratings.iterrows(): # den pane me th seira ta keys tou x ,y -> #FIX_ME
             x_rating = row['rating']
             x_movieId = row['movieId']
-            if x_movieId in x:
-                numerator += x_rating * k_movies_similarity_score_dict[(x_movieId,movieId)] # rating of movie x has watched * similarity_score(movie x has watched,movie to be predicted)
-                denominator += k_movies_similarity_score_dict[(x_movieId,movieId)] # sum of similarity scores of movies that x has watched with the movie to be predicted
-            else:
-                continue
+            for key,value in k_movies_similarity_score_dict.items():
+                if (x_movieId in key) & (movieId in key):
+                    numerator += x_rating * k_movies_similarity_score_dict[(x_movieId,movieId)] # rating of movie x has watched * similarity_score(movie x has watched,movie to be predicted)
+                    denominator += k_movies_similarity_score_dict[(x_movieId,movieId)] # sum of similarity scores of movies that x has watched with the movie to be predicted
+                else:
+                    continue
         rxi = numerator / denominator
         recommendation_scores[movieId] = rxi
 
