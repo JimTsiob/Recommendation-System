@@ -6,6 +6,7 @@ import nltk # pip install nltk
 # nltk.download('stopwords') # <- run this if you don't have the stopwords already on your machine.
 from nltk.corpus import stopwords
 import re
+from collections import Counter
 
 
 
@@ -202,64 +203,88 @@ def itemToItem(id,simFunc,k,directory):
     user_x_ratings = ratings_df[ratings_df['userId'] == id] # get ratings of user x
     user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
     movie_ratings_y_users = ratings_df[(ratings_df['movieId'].isin(user_x_ratings['movieId'])) & (ratings_df['userId'] != id)]
+    movie_ratings_for_x_movies = ratings_df[ratings_df['movieId'].isin(user_x_ratings['movieId'])] # get all x movie ratings for iteration below
     user_y_ids = movie_ratings_y_users['userId'].unique() # get y user ids to get the movies that x hasn't watched
     y_user_movies_other_than_x = ratings_df[(ratings_df['userId'].isin(user_y_ids)) & (~ratings_df['movieId'].isin(user_x_movieIds))]
     
-    # make pivot table from movies of similar users to x which
-    pivot_table = y_user_movies_other_than_x.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0)
-    pivot_table = pivot_table.T # transpose so movies are the indexes
+    # # make pivot table from movies of similar users to x which
+    # pivot_table = y_user_movies_other_than_x.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0)
+    pivot_table = y_user_movies_other_than_x.pivot_table(index='userId', columns='movieId', values='rating', fill_value=0).T
+    ratings = {movie: pivot_table.loc[movie].tolist() for movie in pivot_table.index}
+    # pivot_table = pivot_table.T # transpose so movies are the indexes
  
-    ratings = {movie: pivot_table.loc[movie].tolist() for movie in pivot_table.index} # get all ratings from pivot
-    # mean-centering
-    # mean_centered_pivot = pivot_table.sub(pivot_table.mean(axis=1), axis=0)
+    # ratings = {movie: pivot_table.loc[movie].tolist() for movie in pivot_table.index} # get all ratings from pivot
+    # # mean-centering
+    # # mean_centered_pivot = pivot_table.sub(pivot_table.mean(axis=1), axis=0)
 
+
+    # similarity_scores = {}
+    # for x_movieId in user_x_ratings['movieId']:
+    #     x_movie_ratings = ratings_df[ratings_df['movieId'] == x_movieId]
+    #     x = []
+    #     for rating in x_movie_ratings['rating']:    
+    #         x.append(rating)
+
+    #     x_movie_users = []        
+    #     for userId in x_movie_ratings['userId']:
+    #         x_movie_users.append(userId)
+    #     x_movie_users.append(id) # get all users who have watched movie x for jaccard and dice
+
+    #     for i, y_movieId in enumerate(pivot_table.index):
+    #         y = ratings[y_movieId]
+    #         # optimised_y = [rating > 0 for rating in y]
+    #         y_movie_df = ratings_df[ratings_df['movieId'] == y_movieId]
+    #         y_movie_users = []
+    #         for userId in y_movie_df['userId']:
+    #             y_movie_users.append(userId)
+             
+    #         sxy = 0 # similarity score
+    #         if simFunc.lower() == "jaccard":
+    #             sxy = jaccard(x_movie_users,y_movie_users)
+    #         elif simFunc.lower() == "dice":
+    #             sxy = dice(x_movie_users,y_movie_users)
+    #         elif simFunc.lower() == "cosine":
+    #             x = normalizer(x)
+    #             y = normalizer(y)
+    #             sxy = cosine(x,y)
+    #         else:
+    #             # pearson handles normalization on it's own
+    #             sxy = pearson(x,y)
+            
+    #         similarity_scores[(x_movieId,y_movieId)] = sxy
+    #     print('done for movie: ', x_movieId)
 
     similarity_scores = {}
-    for x_movieId in user_x_ratings['movieId']:
-        x_movie_ratings = ratings_df[ratings_df['movieId'] == x_movieId]
-        x = []
-        for rating in x_movie_ratings['rating']:    
-            x.append(rating)
 
-        x_movie_users = []        
-        for userId in x_movie_ratings['userId']:
-            x_movie_users.append(userId)
-        x_movie_users.append(id) # get all users who have watched movie x for jaccard and dice
+    # For every movie of x , take the similarity score with every other movie watched by y users who watched the same movies as x 
+    for x_movieId, x_movie_ratings in movie_ratings_for_x_movies.groupby('movieId'):
+        x = x_movie_ratings['rating'].tolist()
+        x = normalizer(x)
 
-        for i, y_movieId in enumerate(pivot_table.index):
+        x_movie_users = set(x_movie_ratings['userId'].tolist() + [id]) # get all users who have watched movie x for jaccard and dice
+        
+        print('x_movieId: ',x_movieId)
+
+        for y_movieId, y_movie_ratings in ratings_df[ratings_df['movieId'].isin(pivot_table.index)].groupby('movieId'):
             y = ratings[y_movieId]
-            # optimised_y = [rating > 0 for rating in y]
-            y_movie_df = ratings_df[ratings_df['movieId'] == y_movieId]
-            y_movie_users = []
-            for userId in y_movie_df['userId']:
-                y_movie_users.append(userId)
-             
-            sxy = 0 # similarity score
+            y = normalizer(y)
+            sxy = 0
             if simFunc.lower() == "jaccard":
-                sxy = jaccard(x_movie_users,y_movie_users)
+                sxy = jaccard(x_movie_users, set(y_movie_ratings['userId'].tolist()))
             elif simFunc.lower() == "dice":
-                sxy = dice(x_movie_users,y_movie_users)
+                sxy = dice(x_movie_users, set(y_movie_ratings['userId'].tolist()))
             elif simFunc.lower() == "cosine":
-                x = normalizer(x)
-                y = normalizer(y)
-                sxy = cosine(x,y)
+                sxy = cosine(x, y)
             else:
-                # pearson handles normalization on it's own
-                sxy = pearson(x,y)
-            
-            similarity_scores[(x_movieId,y_movieId)] = sxy
-        print('done for movie: ', x_movieId)
-            
+                sxy = pearson(x, y)
+
+            similarity_scores[(x_movieId, y_movieId)] = sxy
 
     sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
     k_movies_similarity_score_dict = {key: sorted_sxy[key] for key in list(sorted_sxy)[:k]} # get k most similar movies
     most_similar_movie_Ids = [] # get k most similar movie Ids to the movies user x has watched so we can check each of them later on
     for key in k_movies_similarity_score_dict.keys():
         most_similar_movie_Ids.append(key[1]) # take opposite key since this is the similar movie 
-
-    x_movie_keys = []
-    for key in k_movies_similarity_score_dict.keys():
-        x_movie_keys.append(key[0]) # get keys of x movies that correlate with the most similar y_movies
 
     most_similar_movie_df = ratings_df[ratings_df['movieId'].isin(most_similar_movie_Ids)] # filter out all other movies apart from the k most similar
 
@@ -269,7 +294,7 @@ def itemToItem(id,simFunc,k,directory):
         numerator = 0
         denominator = 0
         rxi = 0
-        for index,row in user_x_ratings.iterrows(): # den pane me th seira ta keys tou x ,y -> #FIX_ME
+        for index,row in user_x_ratings.iterrows():
             x_rating = row['rating']
             x_movieId = row['movieId']
             for key,value in k_movies_similarity_score_dict.items():
@@ -282,38 +307,6 @@ def itemToItem(id,simFunc,k,directory):
         recommendation_scores[movieId] = rxi
 
     return recommendation_scores
-
-        
-def calculate_similarity_on_pivot(pivot, simFunc):
-    # function used for calculating the item-to-item similarity in an optimized way.
-    # Using the full dataset for this is simply impossible cost-wise as it takes a lot of time
-    # even with the 100k dataset.
-    sim_functions = {
-        "jaccard": jaccard,
-        "dice": dice,
-        "cosine": cosine,
-        "pearson": pearson
-    }
-
-    simFunc = simFunc.lower()
-    similarity_func = sim_functions[simFunc]
-
-    ratings = {movie: pivot.loc[movie].tolist() for movie in pivot.index}
-
-    similarity_scores = {}
-    for i, movie1 in enumerate(pivot.index):
-        x = ratings[movie1]
-        if simFunc == "cosine":
-            x = normalizer(x)
-        for movie2 in pivot.index[i + 1:]:  # avoid self comparison and redundant comparisons
-            y = ratings[movie2]
-            if simFunc == "cosine":
-                y = normalizer(y)
-            sxy = similarity_func(x, y)
-            similarity_scores[(movie1, movie2)] = sxy
-        print('Iteration for movie', movie1, 'is done.')
-
-    return similarity_scores
 
 
 
@@ -491,7 +484,24 @@ def contentBasedRecommendation(id,simFunc,directory):
         genre_tokens = genres.split('|')
         total_tokens = title_tokens_no_stopwords + genre_tokens
         for token in total_tokens:
-            token_count[token] += 1 # count how many times each token appears in all titles/genres for IDF
+            token_count[token] += 1 # count how many times each token appears in all titles/genres for IDF , essentially this finds the denominator for IDF
+
+    # Text pre-processing
+    total_tokens_dupe_all = []
+    total_tokens_all_no_dupes = []
+    for index,row in movies_df.iterrows():
+        title = row['title']
+        title = title.lower()
+        title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
+        title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
+        title = re.sub(r'[^a-zA-Z0-9\s]', '', title) # remove all remaining non-alphanumeric characters such as dots, question marks, dashes etc.
+        title_tokens = title.split(' ')
+        title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words] # remove stopwords
+        no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
+        total_tokens_dupe_all.extend(title_tokens_no_stopwords) 
+        total_tokens_all_no_dupes.extend(no_dupe_title_tokens) # taking both tokens of title and genres as features
+
+    # print('total',total_tokens_all_no_dupes)
 
     # TF and IDF calculation for movie x
     for index,row in movies_df.iterrows():
@@ -501,39 +511,48 @@ def contentBasedRecommendation(id,simFunc,directory):
         title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
         title = re.sub(r'[^a-zA-Z0-9\s]', '', title) # remove all remaining non-alphanumeric characters such as dots, question marks, dashes etc.
         title_tokens = title.split(' ')
-        title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words]
+        title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words] # remove stopwords
         no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
         genres = row['genres']
         genres = genres.lower()
         genre_tokens = genres.split('|')
-        total_tokens_dupe_x = title_tokens_no_stopwords + genre_tokens 
+        total_tokens_dupe_x = total_tokens_dupe_all + genre_tokens 
         total_tokens_x_no_dupes = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
         if title == x_title:
-            for token in total_tokens_dupe_x:
-                TF_x[(title,token)] += 1 # Calculate TF
+            # for token in total_tokens_dupe_x:
+            #     TF_x[(title,token)] += 1 # Calculate TF
 
             # for token in total_tokens_dupe_x: # alternative form for TF-IDF , doesn't change results
             #     TF_x[(title,token)] = TF_x[(title,token)] / len(total_tokens_dupe_x)
 
-            for token in total_tokens_x_no_dupes:
-                IDF_x[token] = math.log(len(movies_df) / token_count[token]) # Calculate IDF
+            # TF_x = {(title,token): total_tokens_dupe_x.count(token) for token in total_tokens_dupe_x}
+            TF_x = {key: TF_x.get(key, 0) + 1 for key in [(title, token) for token in total_tokens_dupe_x] if key in TF_x} # Optimize this
+            IDF_x = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_x_no_dupes}
+            TF_IDF_x = {token: TF_x[(title,token)] * IDF_x[token] for token in total_tokens_x_no_dupes}
 
-            for token in total_tokens_x_no_dupes:
-                TF_IDF_x[token] = TF_x[(title,token)] * IDF_x[token] # Calculate TF-IDF
+            
+
+            # for token in total_tokens_x_no_dupes:
+            #     IDF_x[token] = math.log(len(movies_df) / token_count[token]) # Calculate IDF
+
+            # for token in total_tokens_x_no_dupes:
+            #     TF_IDF_x[token] = TF_x[(title,token)] * IDF_x[token] # Calculate TF-IDF
             
             
             break
 
     x_jacc_dice = []
-    
+    print('TF_X: ',TF_x)
     for token in TF_IDF_x.keys():
         if TF_IDF_x[token] > 0:
             x_jacc_dice.append(token)
 
-    tf_idf_x_list = []
-    for key in TF_IDF_x.keys():
-            tf_idf_x_list.append(TF_IDF_x[key])
 
+    tf_idf_x_list = []
+    # for key in TF_IDF_x.keys():
+    #         tf_idf_x_list.append(TF_IDF_x[key])
+    tf_idf_x_list = list(TF_IDF_x.values())
+    print('tf_idf_x: ',tf_idf_x_list)
 
     similarity_scores = {}
 
@@ -554,24 +573,29 @@ def contentBasedRecommendation(id,simFunc,directory):
         total_tokens_y_no_dupes = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
         total_tokens_y_dupes = title_tokens_no_stopwords + genre_tokens
         tf_idf_y_list = []
-        TF_other_movies = {tuple: 0 for tuple in title_token_tuples} # reset all dictionaries so we can get the values of only the specific movie in the loop
-        IDF_other_movies = {token: 0 for token in token_keys}
-        TF_IDF_other_movies = {token: 0 for token in token_keys}  
-        for token in total_tokens_y_dupes:
-            TF_other_movies[(title,token)] += 1
+        # TF_other_movies = {tuple: 0 for tuple in title_token_tuples} # reset all dictionaries so we can get the values of only the specific movie in the loop
+        # IDF_other_movies = {token: 0 for token in token_keys}
+        # TF_IDF_other_movies = {token: 0 for token in token_keys}  
+        # for token in total_tokens_y_dupes:
+        #     TF_other_movies[(title,token)] += 1
             
+        TF_other_movies = {(title,token): total_tokens_y_dupes.count(token) for token in total_tokens_y_dupes}
+        IDF_other_movies = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_y_no_dupes}
+        TF_IDF_other_movies = {token: TF_other_movies[(title,token)] * IDF_other_movies[token] for token in total_tokens_y_no_dupes}
+
+        tf_idf_y_list = list(TF_IDF_other_movies.values())
         # for token in total_tokens_y_dupes:
         #     TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(total_tokens_y_dupes)
 
-        for token in total_tokens_y_no_dupes:
-            IDF_other_movies[token] = math.log(len(movies_df) / token_count[token])
+        # for token in total_tokens_y_no_dupes:
+        #     IDF_other_movies[token] = math.log(len(movies_df) / token_count[token])
 
-        for token in total_tokens_y_no_dupes:
-            TF_IDF_other_movies[token] = TF_other_movies[(title,token)] * IDF_other_movies[token]
+        # for token in total_tokens_y_no_dupes:
+        #     TF_IDF_other_movies[token] = TF_other_movies[(title,token)] * IDF_other_movies[token]
             
         
-        for key in TF_IDF_other_movies.keys():
-            tf_idf_y_list.append(TF_IDF_other_movies[key])
+        # for key in TF_IDF_other_movies.keys():
+        #     tf_idf_y_list.append(TF_IDF_other_movies[key])
 
 
         y_jacc_dice = []
@@ -580,7 +604,7 @@ def contentBasedRecommendation(id,simFunc,directory):
             if TF_IDF_other_movies[token] > 0:
                 y_jacc_dice.append(token)
 
-        
+        # print('tf_y',tf_idf_y_list)
         sxy = 0 # similarity score
         if simFunc.lower() == "jaccard":
             sxy = jaccard(x_jacc_dice,y_jacc_dice)
