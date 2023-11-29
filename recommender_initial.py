@@ -516,33 +516,34 @@ def contentBasedRecommendation(id,simFunc,directory):
         genres = row['genres']
         genres = genres.lower()
         genre_tokens = genres.split('|')
-        total_tokens_dupe_x = total_tokens_dupe_all + genre_tokens 
+        total_tokens_dupe_x = title_tokens_no_stopwords + genre_tokens 
         total_tokens_x_no_dupes = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
         if title == x_title:
-            # for token in total_tokens_dupe_x:
-            #     TF_x[(title,token)] += 1 # Calculate TF
+            for token in total_tokens_dupe_x:
+                TF_x[(title,token)] += 1 # Calculate TF
 
             # for token in total_tokens_dupe_x: # alternative form for TF-IDF , doesn't change results
             #     TF_x[(title,token)] = TF_x[(title,token)] / len(total_tokens_dupe_x)
 
             # TF_x = {(title,token): total_tokens_dupe_x.count(token) for token in total_tokens_dupe_x}
-            TF_x = {key: TF_x.get(key, 0) + 1 for key in [(title, token) for token in total_tokens_dupe_x] if key in TF_x} # Optimize this
-            IDF_x = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_x_no_dupes}
-            TF_IDF_x = {token: TF_x[(title,token)] * IDF_x[token] for token in total_tokens_x_no_dupes}
+            # TF_x = {key: TF_x.get(key, 0) + 1 for key in [(title, token) for token in total_tokens_dupe_x] if key in TF_x} # Optimize this
+            # TF_x = Counter(total_tokens_dupe_x)
+            # IDF_x = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_x_no_dupes}
+            # TF_IDF_x = {token: TF_x[(title,token)] * IDF_x[token] for token in total_tokens_x_no_dupes}
 
             
 
-            # for token in total_tokens_x_no_dupes:
-            #     IDF_x[token] = math.log(len(movies_df) / token_count[token]) # Calculate IDF
+            for token in total_tokens_x_no_dupes:
+                IDF_x[token] = math.log(len(movies_df) / token_count[token]) # Calculate IDF
 
-            # for token in total_tokens_x_no_dupes:
-            #     TF_IDF_x[token] = TF_x[(title,token)] * IDF_x[token] # Calculate TF-IDF
+            for token in total_tokens_x_no_dupes:
+                TF_IDF_x[token] = TF_x[(title,token)] * IDF_x[token] # Calculate TF-IDF
             
             
             break
 
     x_jacc_dice = []
-    print('TF_X: ',TF_x)
+    print('TF_IDF_X: ',len(TF_IDF_x))
     for token in TF_IDF_x.keys():
         if TF_IDF_x[token] > 0:
             x_jacc_dice.append(token)
@@ -552,7 +553,7 @@ def contentBasedRecommendation(id,simFunc,directory):
     # for key in TF_IDF_x.keys():
     #         tf_idf_x_list.append(TF_IDF_x[key])
     tf_idf_x_list = list(TF_IDF_x.values())
-    print('tf_idf_x: ',tf_idf_x_list)
+    # print('tf_idf_x: ',len(TF_x))
 
     similarity_scores = {}
 
@@ -573,25 +574,27 @@ def contentBasedRecommendation(id,simFunc,directory):
         total_tokens_y_no_dupes = no_dupe_title_tokens + genre_tokens # taking both tokens of title and genres as features
         total_tokens_y_dupes = title_tokens_no_stopwords + genre_tokens
         tf_idf_y_list = []
-        # TF_other_movies = {tuple: 0 for tuple in title_token_tuples} # reset all dictionaries so we can get the values of only the specific movie in the loop
-        # IDF_other_movies = {token: 0 for token in token_keys}
-        # TF_IDF_other_movies = {token: 0 for token in token_keys}  
-        # for token in total_tokens_y_dupes:
-        #     TF_other_movies[(title,token)] += 1
+        TF_other_movies = {tuple: 0 for tuple in title_token_tuples} # reset all dictionaries so we can get the values of only the specific movie in the loop
+        IDF_other_movies = {token: 0 for token in token_keys}
+        TF_IDF_other_movies = {token: 0 for token in token_keys}  
+        for token in total_tokens_y_dupes:
+            TF_other_movies[(title,token)] += 1
             
-        TF_other_movies = {(title,token): total_tokens_y_dupes.count(token) for token in total_tokens_y_dupes}
+        # TF_other_movies = {(title,token): total_tokens_y_dupes.count(token) for token in total_tokens_y_dupes}
         IDF_other_movies = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_y_no_dupes}
-        TF_IDF_other_movies = {token: TF_other_movies[(title,token)] * IDF_other_movies[token] for token in total_tokens_y_no_dupes}
+        # TF_IDF_other_movies = {token: TF_other_movies[(title,token)] * IDF_other_movies[token] for token in total_tokens_y_no_dupes}
 
-        tf_idf_y_list = list(TF_IDF_other_movies.values())
+        
         # for token in total_tokens_y_dupes:
         #     TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(total_tokens_y_dupes)
 
         # for token in total_tokens_y_no_dupes:
         #     IDF_other_movies[token] = math.log(len(movies_df) / token_count[token])
 
-        # for token in total_tokens_y_no_dupes:
-        #     TF_IDF_other_movies[token] = TF_other_movies[(title,token)] * IDF_other_movies[token]
+        for token in total_tokens_y_no_dupes:
+            TF_IDF_other_movies[token] = TF_other_movies[(title,token)] * IDF_other_movies[token]
+
+        tf_idf_y_list = list(TF_IDF_other_movies.values())
             
         
         # for key in TF_IDF_other_movies.keys():
@@ -616,7 +619,7 @@ def contentBasedRecommendation(id,simFunc,directory):
             sxy = pearson(tf_idf_x_list,tf_idf_y_list)            
 
         similarity_scores[row['movieId']] = sxy
-
+    
     return similarity_scores
 
 def hybrid(userId,movieId,simFunc,k,n,directory):
