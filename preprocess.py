@@ -95,18 +95,9 @@ def userToUser(id,simFunc,k,directory):
 
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
-    tags_df = pd.read_csv(directory + '/tags.csv')
-    movies_df = pd.read_csv(directory + '/movies.csv')
-    links_df = pd.read_csv(directory + '/links.csv')
+    
     # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
     # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
-
-    print('ratings_df size: ', ratings_df.shape)
-    print('tags_df size: ', tags_df.shape)
-    print('movies_df size: ', movies_df.shape)
-    print('links_df size: ', links_df.shape)
-    # print('genome_tags_df size: ', genome_tags_df.size)
-    # print('genome_scores_df size: ', genome_scores_df.size)
 
     user_x_ratings = ratings_df[ratings_df['userId'] == id]  # get ratings of x user
     user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
@@ -543,7 +534,6 @@ def contentBasedRecommendation(id,simFunc,directory):
             break
 
     x_jacc_dice = []
-    print('TF_IDF_X: ',len(TF_IDF_x))
     for token in TF_IDF_x.keys():
         if TF_IDF_x[token] > 0:
             x_jacc_dice.append(token)
@@ -581,15 +571,15 @@ def contentBasedRecommendation(id,simFunc,directory):
             TF_other_movies[(title,token)] += 1
             
         # TF_other_movies = {(title,token): total_tokens_y_dupes.count(token) for token in total_tokens_y_dupes}
-        IDF_other_movies = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_y_no_dupes}
+        # IDF_other_movies = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_y_no_dupes}
         # TF_IDF_other_movies = {token: TF_other_movies[(title,token)] * IDF_other_movies[token] for token in total_tokens_y_no_dupes}
 
         
         # for token in total_tokens_y_dupes:
         #     TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(total_tokens_y_dupes)
 
-        # for token in total_tokens_y_no_dupes:
-        #     IDF_other_movies[token] = math.log(len(movies_df) / token_count[token])
+        for token in total_tokens_y_no_dupes:
+            IDF_other_movies[token] = math.log(len(movies_df) / token_count[token])
 
         for token in total_tokens_y_no_dupes:
             TF_IDF_other_movies[token] = TF_other_movies[(title,token)] * IDF_other_movies[token]
@@ -694,26 +684,40 @@ def hybrid(userId,movieId,simFunc,k,n,directory):
 
 def main():
     arguments = sys.argv[1:]
-    if len(arguments) < 6:
+    print(len(arguments))
+    if len(arguments) < 4:
         print("ERROR: please provide all arguments.")
-        print('example: python preprocess.py -d 100_datasets -s jaccard -a user')
+        print('example: python preprocess.py -d 100_datasets -a user')
         return
 
-    similarity_metric = arguments[3]
-    algorithm = arguments[5]
+    algorithm = arguments[3]
     
     movies_df = pd.read_csv(arguments[1] + '/movies.csv') # load this to show recommended movies as output
     ratings_df = pd.read_csv(arguments[1] + '/ratings.csv')
+    tags_df = pd.read_csv(arguments[1] + '/tags.csv')
+    links_df = pd.read_csv(arguments[1] + '/links.csv')
+    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv') # you can only load these two with the full dataset
+    # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
 
+    print('ratings_df size: ', ratings_df.shape)
+    print('tags_df size: ', tags_df.shape)
+    print('movies_df size: ', movies_df.shape)
+    print('links_df size: ', links_df.shape)
+    # print('genome_tags_df size: ', genome_tags_df.size)
+    # print('genome_scores_df size: ', genome_scores_df.size)
+
+    sim_metrics = ['jaccard','dice','cosine','pearson']
     if algorithm == "user":
         user_counter = 0
         for userId in ratings_df['userId'].unique():
-            rx = userToUser(userId,similarity_metric,128,arguments[1])
-            print('done for user: ', user_counter)
-            user_counter += 1
-            with open('text_files/user_to_user/user_' + str(userId) + '_' + similarity_metric + '.txt', 'w') as file:
-                for val in rx.values():
-                    file.write('%s\n' % str(val))
+            for metric in sim_metrics:
+                rx = userToUser(userId,metric,128,arguments[1])
+                print('done for user: ', user_counter , ' metric:', metric)
+                user_counter += 1
+                with open('text_files/user_to_user/user_' + str(userId) + '_' + metric + '.txt', 'w') as file:
+                    for key in rx.keys():
+                        file.write(str(key) + ' ' + str(rx[key]) + "\n")
+            
                 
         # sorted_rx = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
         # first_n_keys = list(sorted_rx.keys())[:number_of_recommendations] # get top n keys

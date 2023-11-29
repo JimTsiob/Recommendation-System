@@ -543,7 +543,6 @@ def contentBasedRecommendation(id,simFunc,directory):
             break
 
     x_jacc_dice = []
-    print('TF_IDF_X: ',len(TF_IDF_x))
     for token in TF_IDF_x.keys():
         if TF_IDF_x[token] > 0:
             x_jacc_dice.append(token)
@@ -581,15 +580,15 @@ def contentBasedRecommendation(id,simFunc,directory):
             TF_other_movies[(title,token)] += 1
             
         # TF_other_movies = {(title,token): total_tokens_y_dupes.count(token) for token in total_tokens_y_dupes}
-        IDF_other_movies = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_y_no_dupes}
+        # IDF_other_movies = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_y_no_dupes}
         # TF_IDF_other_movies = {token: TF_other_movies[(title,token)] * IDF_other_movies[token] for token in total_tokens_y_no_dupes}
 
         
         # for token in total_tokens_y_dupes:
         #     TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(total_tokens_y_dupes)
 
-        # for token in total_tokens_y_no_dupes:
-        #     IDF_other_movies[token] = math.log(len(movies_df) / token_count[token])
+        for token in total_tokens_y_no_dupes:
+            IDF_other_movies[token] = math.log(len(movies_df) / token_count[token])
 
         for token in total_tokens_y_no_dupes:
             TF_IDF_other_movies[token] = TF_other_movies[(title,token)] * IDF_other_movies[token]
