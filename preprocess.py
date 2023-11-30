@@ -6,7 +6,6 @@ import nltk # pip install nltk
 # nltk.download('stopwords') # <- run this if you don't have the stopwords already on your machine.
 from nltk.corpus import stopwords
 import re
-from collections import Counter
 
 
 
@@ -299,20 +298,9 @@ def tagBasedRecommendation(id,simFunc,directory):
     # Here, we get the tags for each movie, get their counts, compare them and get the most similar movies based on tag count.
     # for Jaccard and Dice we get the tags that have tag count >= 1
 
-    # load datasets
-    ratings_df = pd.read_csv(directory + '/ratings.csv')
+    # load dataset
+    
     tags_df = pd.read_csv(directory + '/tags.csv')
-    movies_df = pd.read_csv(directory + '/movies.csv')
-    links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
-
-    print('ratings_df size: ', ratings_df.shape)
-    print('tags_df size: ', tags_df.shape)
-    print('movies_df size: ', movies_df.shape)
-    print('links_df size: ', links_df.shape)
-    # print('genome_tags_df size: ', genome_tags_df.shape)
-    # print('genome_scores_df size: ', genome_scores_df.shape)
     # movies to check: 60756 -> comedy, 4343, 2, 31658
 
     
@@ -724,6 +712,16 @@ def main():
                 rx = itemToItem(userId,metric,128,arguments[1])
                 print('done for user: ', userId , ' metric:', metric)
                 with open('text_files/item_to_item/user_' + str(userId) + '_' + metric + '.txt', 'w') as file:
+                    for key in rx.keys():
+                        file.write(str(key) + ' ' + str(rx[key]) + "\n")
+
+    
+    elif algorithm == "tag":
+        for movieId in tags_df['movieId'].unique():
+            for metric in sim_metrics:
+                rx = tagBasedRecommendation(movieId,metric,arguments[1])
+                print('done for movie: ', movieId , ' metric:', metric)
+                with open('text_files/tag_based/movie_' + str(movieId) + '_' + metric + '.txt', 'w') as file:
                     for key in rx.keys():
                         file.write(str(key) + ' ' + str(rx[key]) + "\n")
                 
