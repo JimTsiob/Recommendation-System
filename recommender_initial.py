@@ -656,18 +656,29 @@ def hybrid(userId,movieId,simFunc,k,n,directory):
     # Find common movies in the metrics
     common_movie_ids = set(first_n_keys_u2u) & set(first_n_keys_tag) & set(first_n_keys_tfidf)
 
+    # Weights for each recommendation algorithm
+    weight1 = 0.4
+    weight2 = 0.5
+    weight3 = 0.3
+
     # if there are no common movies simply sort all scores and send the best ones back
     if (len(common_movie_ids) < n):
+        for val in sorted_u2u.values():
+            val *= weight1
+
+        for val in sorted_tfidf.values():
+            val *= weight3
+        
+        for val in sorted_tag.values():
+            val *= weight2
+
         hybrid_final_scores = {}
         hybrid_final_scores.update(sorted_u2u)
         hybrid_final_scores.update(sorted_tfidf)
         hybrid_final_scores.update(sorted_tag)
         return hybrid_final_scores
 
-    # Weights for each recommendation source
-    weight1 = 0.4
-    weight2 = 0.5
-    weight3 = 0.3
+    
 
     hybrid_scores = {}
 

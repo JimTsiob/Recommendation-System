@@ -178,18 +178,6 @@ def itemToItem(id,simFunc,k,directory):
 
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
-    tags_df = pd.read_csv(directory + '/tags.csv')
-    movies_df = pd.read_csv(directory + '/movies.csv')
-    links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
-
-    print('ratings_df size: ', ratings_df.shape)
-    print('tags_df size: ', tags_df.shape)
-    print('movies_df size: ', movies_df.shape)
-    print('links_df size: ', links_df.shape)
-    # print('genome_tags_df size: ', genome_tags_df.size)
-    # print('genome_scores_df size: ', genome_scores_df.size)
 
     user_x_ratings = ratings_df[ratings_df['userId'] == id] # get ratings of user x
     user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
@@ -250,21 +238,22 @@ def itemToItem(id,simFunc,k,directory):
     # For every movie of x , take the similarity score with every other movie watched by y users who watched the same movies as x 
     for x_movieId, x_movie_ratings in movie_ratings_for_x_movies.groupby('movieId'):
         x = x_movie_ratings['rating'].tolist()
-        x = normalizer(x)
 
         x_movie_users = set(x_movie_ratings['userId'].tolist() + [id]) # get all users who have watched movie x for jaccard and dice
         
-        print('x_movieId: ',x_movieId)
+        # print('x_movieId: ',x_movieId)
 
         for y_movieId, y_movie_ratings in ratings_df[ratings_df['movieId'].isin(pivot_table.index)].groupby('movieId'):
             y = ratings[y_movieId]
-            y = normalizer(y)
+            
             sxy = 0
             if simFunc.lower() == "jaccard":
                 sxy = jaccard(x_movie_users, set(y_movie_ratings['userId'].tolist()))
             elif simFunc.lower() == "dice":
                 sxy = dice(x_movie_users, set(y_movie_ratings['userId'].tolist()))
             elif simFunc.lower() == "cosine":
+                x = normalizer(x)
+                y = normalizer(y)
                 sxy = cosine(x, y)
             else:
                 sxy = pearson(x, y)
@@ -647,18 +636,29 @@ def hybrid(userId,movieId,simFunc,k,n,directory):
     # Find common movies in the metrics
     common_movie_ids = set(first_n_keys_u2u) & set(first_n_keys_tag) & set(first_n_keys_tfidf)
 
+    # Weights for each recommendation algorithm
+    weight1 = 0.4
+    weight2 = 0.5
+    weight3 = 0.3
+
     # if there are no common movies simply sort all scores and send the best ones back
     if (len(common_movie_ids) < n):
+        for val in sorted_u2u.values():
+            val *= weight1
+
+        for val in sorted_tfidf.values():
+            val *= weight3
+        
+        for val in sorted_tag.values():
+            val *= weight2
+
         hybrid_final_scores = {}
         hybrid_final_scores.update(sorted_u2u)
         hybrid_final_scores.update(sorted_tfidf)
         hybrid_final_scores.update(sorted_tag)
         return hybrid_final_scores
 
-    # Weights for each recommendation source
-    weight1 = 0.4
-    weight2 = 0.5
-    weight3 = 0.3
+    
 
     hybrid_scores = {}
 
@@ -717,7 +717,15 @@ def main():
                 with open('text_files/user_to_user/user_' + str(userId) + '_' + metric + '.txt', 'w') as file:
                     for key in rx.keys():
                         file.write(str(key) + ' ' + str(rx[key]) + "\n")
-            
+        
+    elif algorithm == "item":
+        for userId in ratings_df['userId'].unique():
+            for metric in sim_metrics:
+                rx = itemToItem(userId,metric,128,arguments[1])
+                print('done for user: ', userId , ' metric:', metric)
+                with open('text_files/item_to_item/user_' + str(userId) + '_' + metric + '.txt', 'w') as file:
+                    for key in rx.keys():
+                        file.write(str(key) + ' ' + str(rx[key]) + "\n")
                 
         # sorted_rx = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
         # first_n_keys = list(sorted_rx.keys())[:number_of_recommendations] # get top n keys
