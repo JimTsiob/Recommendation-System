@@ -630,16 +630,13 @@ def hybrid(userId,movieId,simFunc,k,n,directory):
     sorted_tag = dict(sorted(scores_tag.items(), key=lambda item: item[1], reverse=True))
     sorted_tfidf = dict(sorted(scores_tfidf.items(), key=lambda item: item[1], reverse=True))
 
-    # get top n values for all scores
+    # get top n keys for all scores
     
     first_n_keys_u2u = list(sorted_u2u.keys())[:n]
-    first_n_values_u2u = list(sorted_u2u.values())[:n]
 
     first_n_keys_tag = list(sorted_tag.keys())[:n]
-    first_n_values_tag = list(sorted_tag.values())[:n]
 
     first_n_keys_tfidf = list(sorted_tfidf.keys())[:n]
-    first_n_values_tfidf = list(sorted_tfidf.values())[:n]
     
 
     # Find common movies in the metrics
