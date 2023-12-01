@@ -379,20 +379,8 @@ def contentBasedRecommendation(id,simFunc,directory):
     # directory: the directory to load the datasets from
 
     # for testing: 263,61160 have the same word twice in title.
-    # load datasets
-    ratings_df = pd.read_csv(directory + '/ratings.csv')
-    tags_df = pd.read_csv(directory + '/tags.csv')
+    # load dataset
     movies_df = pd.read_csv(directory + '/movies.csv')
-    links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
-
-    print('ratings_df size: ', ratings_df.shape)
-    print('tags_df size: ', tags_df.shape)
-    print('movies_df size: ', movies_df.shape)
-    print('links_df size: ', links_df.shape)
-    # print('genome_tags_df size: ', genome_tags_df.shape)
-    # print('genome_scores_df size: ', genome_scores_df.shape)
     
     
     title_token_tuples = []
@@ -722,6 +710,15 @@ def main():
                 rx = tagBasedRecommendation(movieId,metric,arguments[1])
                 print('done for movie: ', movieId , ' metric:', metric)
                 with open('text_files/tag_based/movie_' + str(movieId) + '_' + metric + '.txt', 'w') as file:
+                    for key in rx.keys():
+                        file.write(str(key) + ' ' + str(rx[key]) + "\n")
+
+    elif algorithm == "title":
+        for movieId in movies_df['movieId'].unique():
+            for metric in sim_metrics:
+                rx = contentBasedRecommendation(movieId,metric,arguments[1])
+                print('done for movie: ', movieId , ' metric:', metric)
+                with open('text_files/content_based/movie_' + str(movieId) + '_' + metric + '.txt', 'w') as file:
                     for key in rx.keys():
                         file.write(str(key) + ' ' + str(rx[key]) + "\n")
                 
