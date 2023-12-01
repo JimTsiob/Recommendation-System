@@ -576,15 +576,10 @@ def contentBasedRecommendation(id,simFunc,directory):
         IDF_other_movies = {token: 0 for token in token_keys}
         TF_IDF_other_movies = {token: 0 for token in token_keys}  
         for token in total_tokens_y_dupes:
-            TF_other_movies[(title,token)] += 1
-            
-        # TF_other_movies = {(title,token): total_tokens_y_dupes.count(token) for token in total_tokens_y_dupes}
-        # IDF_other_movies = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_y_no_dupes}
-        # TF_IDF_other_movies = {token: TF_other_movies[(title,token)] * IDF_other_movies[token] for token in total_tokens_y_no_dupes}
-
+            TF_other_movies[(title,token)] += 1 # 
         
         # for token in total_tokens_y_dupes:
-        #     TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(total_tokens_y_dupes)
+        #     TF_other_movies[(title,token)] = TF_other_movies[(title,token)] / len(total_tokens_y_dupes) # this represents the actual formula of TF, but I didn't see any difference, so I left it in comments
 
         for token in total_tokens_y_no_dupes:
             IDF_other_movies[token] = math.log(len(movies_df) / token_count[token])
@@ -593,11 +588,6 @@ def contentBasedRecommendation(id,simFunc,directory):
             TF_IDF_other_movies[token] = TF_other_movies[(title,token)] * IDF_other_movies[token]
 
         tf_idf_y_list = list(TF_IDF_other_movies.values())
-            
-        
-        # for key in TF_IDF_other_movies.keys():
-        #     tf_idf_y_list.append(TF_IDF_other_movies[key])
-
 
         y_jacc_dice = []
         # tf_idf_y_list = normalizer(tf_idf_y_list)
