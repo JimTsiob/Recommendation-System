@@ -94,9 +94,6 @@ def userToUser(id,simFunc,k,directory):
 
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
-    
-    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
 
     user_x_ratings = ratings_df[ratings_df['userId'] == id]  # get ratings of x user
     user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
@@ -656,7 +653,7 @@ def main():
         return
 
     algorithm = arguments[3]
-    
+
     movies_df = pd.read_csv(arguments[1] + '/movies.csv') # load this to show recommended movies as output
     ratings_df = pd.read_csv(arguments[1] + '/ratings.csv')
     tags_df = pd.read_csv(arguments[1] + '/tags.csv')

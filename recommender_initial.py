@@ -94,18 +94,6 @@ def userToUser(id,simFunc,k,directory):
 
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
-    tags_df = pd.read_csv(directory + '/tags.csv')
-    movies_df = pd.read_csv(directory + '/movies.csv')
-    links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
-
-    print('ratings_df size: ', ratings_df.shape)
-    print('tags_df size: ', tags_df.shape)
-    print('movies_df size: ', movies_df.shape)
-    print('links_df size: ', links_df.shape)
-    # print('genome_tags_df size: ', genome_tags_df.size)
-    # print('genome_scores_df size: ', genome_scores_df.size)
 
     user_x_ratings = ratings_df[ratings_df['userId'] == id]  # get ratings of x user
     user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
@@ -186,18 +174,6 @@ def itemToItem(id,simFunc,k,directory):
 
     # load datasets
     ratings_df = pd.read_csv(directory + '/ratings.csv')
-    tags_df = pd.read_csv(directory + '/tags.csv')
-    movies_df = pd.read_csv(directory + '/movies.csv')
-    links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
-
-    print('ratings_df size: ', ratings_df.shape)
-    print('tags_df size: ', tags_df.shape)
-    print('movies_df size: ', movies_df.shape)
-    print('links_df size: ', links_df.shape)
-    # print('genome_tags_df size: ', genome_tags_df.size)
-    # print('genome_scores_df size: ', genome_scores_df.size)
 
     user_x_ratings = ratings_df[ratings_df['userId'] == id] # get ratings of user x
     user_x_movieIds = user_x_ratings['movieId'].unique() # get movie ids of user x to filter them out later on
@@ -318,22 +294,8 @@ def tagBasedRecommendation(id,simFunc,directory):
     # Here, we get the tags for each movie, get their counts, compare them and get the most similar movies based on tag count.
     # for Jaccard and Dice we get the tags that have tag count >= 1
 
-    # load datasets
-    ratings_df = pd.read_csv(directory + '/ratings.csv')
+    # load dataset
     tags_df = pd.read_csv(directory + '/tags.csv')
-    movies_df = pd.read_csv(directory + '/movies.csv')
-    links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
-
-    print('ratings_df size: ', ratings_df.shape)
-    print('tags_df size: ', tags_df.shape)
-    print('movies_df size: ', movies_df.shape)
-    print('links_df size: ', links_df.shape)
-    # print('genome_tags_df size: ', genome_tags_df.shape)
-    # print('genome_scores_df size: ', genome_scores_df.shape)
-    # movies to check: 60756 -> comedy, 4343, 2, 31658
-
     
     tags = []
     for tag in tags_df['tag']:
@@ -410,20 +372,9 @@ def contentBasedRecommendation(id,simFunc,directory):
     # directory: the directory to load the datasets from
 
     # for testing: 263,61160 have the same word twice in title.
-    # load datasets
-    ratings_df = pd.read_csv(directory + '/ratings.csv')
-    tags_df = pd.read_csv(directory + '/tags.csv')
-    movies_df = pd.read_csv(directory + '/movies.csv')
-    links_df = pd.read_csv(directory + '/links.csv')
-    # genome_tags_df = pd.read_csv(directory + '/genome-tags.csv') # you can only load these two with the full dataset
-    # genome_scores_df = pd.read_csv(directory + '/genome-scores.csv')
+    # load dataset
 
-    print('ratings_df size: ', ratings_df.shape)
-    print('tags_df size: ', tags_df.shape)
-    print('movies_df size: ', movies_df.shape)
-    print('links_df size: ', links_df.shape)
-    # print('genome_tags_df size: ', genome_tags_df.shape)
-    # print('genome_scores_df size: ', genome_scores_df.shape)
+    movies_df = pd.read_csv(directory + '/movies.csv')
     
     
     title_token_tuples = []
@@ -700,6 +651,18 @@ def main():
     similarity_metric = arguments[5]
 
     movies_df = pd.read_csv(arguments[1] + '/movies.csv') # load this to show recommended movies as output
+    ratings_df = pd.read_csv(arguments[1] + '/ratings.csv')
+    tags_df = pd.read_csv(arguments[1] + '/tags.csv')
+    links_df = pd.read_csv(arguments[1] + '/links.csv')
+    # genome_tags_df = pd.read_csv(arguments[1] + '/genome-tags.csv') # you can only load these two with the full dataset
+    # genome_scores_df = pd.read_csv(arguments[1] + '/genome-scores.csv')
+
+    print('ratings_df size: ', ratings_df.shape)
+    print('tags_df size: ', tags_df.shape)
+    print('movies_df size: ', movies_df.shape)
+    print('links_df size: ', links_df.shape)
+    # print('genome_tags_df size: ', genome_tags_df.size)
+    # print('genome_scores_df size: ', genome_scores_df.size)
 
     if arguments[7] == "user":
         rx = userToUser(input,similarity_metric,128,arguments[1])
