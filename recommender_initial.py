@@ -149,9 +149,6 @@ def userToUser(id,simFunc,k,directory):
         y_movie = row['movieId']
         y_rating = row['rating'] # get ratings for each movie
         y_rating_norm = normalizeNum(y_rating,0.0,5.0)
-        # y = []
-        # for rating in y_rating['rating']:
-        #     y.append(rating)
 
         numerator = k_users_similarity_score_dict[y_user] * y_rating_norm # sxy * ryi
         numerator_sums[y_movie] += numerator
@@ -188,46 +185,8 @@ def itemToItem(id,simFunc,k,directory):
     ratings = {movie: pivot_table.loc[movie].tolist() for movie in pivot_table.index}
     # pivot_table = pivot_table.T # transpose so movies are the indexes
  
-    # ratings = {movie: pivot_table.loc[movie].tolist() for movie in pivot_table.index} # get all ratings from pivot
-    # # mean-centering
+    # # mean-centering , didn't produce any different results than without mean-centering so I put it in comments
     # # mean_centered_pivot = pivot_table.sub(pivot_table.mean(axis=1), axis=0)
-
-
-    # similarity_scores = {}
-    # for x_movieId in user_x_ratings['movieId']:
-    #     x_movie_ratings = ratings_df[ratings_df['movieId'] == x_movieId]
-    #     x = []
-    #     for rating in x_movie_ratings['rating']:    
-    #         x.append(rating)
-
-    #     x_movie_users = []        
-    #     for userId in x_movie_ratings['userId']:
-    #         x_movie_users.append(userId)
-    #     x_movie_users.append(id) # get all users who have watched movie x for jaccard and dice
-
-    #     for i, y_movieId in enumerate(pivot_table.index):
-    #         y = ratings[y_movieId]
-    #         # optimised_y = [rating > 0 for rating in y]
-    #         y_movie_df = ratings_df[ratings_df['movieId'] == y_movieId]
-    #         y_movie_users = []
-    #         for userId in y_movie_df['userId']:
-    #             y_movie_users.append(userId)
-             
-    #         sxy = 0 # similarity score
-    #         if simFunc.lower() == "jaccard":
-    #             sxy = jaccard(x_movie_users,y_movie_users)
-    #         elif simFunc.lower() == "dice":
-    #             sxy = dice(x_movie_users,y_movie_users)
-    #         elif simFunc.lower() == "cosine":
-    #             x = normalizer(x)
-    #             y = normalizer(y)
-    #             sxy = cosine(x,y)
-    #         else:
-    #             # pearson handles normalization on it's own
-    #             sxy = pearson(x,y)
-            
-    #         similarity_scores[(x_movieId,y_movieId)] = sxy
-    #     print('done for movie: ', x_movieId)
 
     similarity_scores = {}
 
@@ -472,15 +431,8 @@ def contentBasedRecommendation(id,simFunc,directory):
             for token in total_tokens_dupe_x:
                 TF_x[(title,token)] += 1 # Calculate TF
 
-            # for token in total_tokens_dupe_x: # alternative form for TF-IDF , doesn't change results
+            # for token in total_tokens_dupe_x: # alternative form for TF calculation , doesn't change results
             #     TF_x[(title,token)] = TF_x[(title,token)] / len(total_tokens_dupe_x)
-
-            # TF_x = {(title,token): total_tokens_dupe_x.count(token) for token in total_tokens_dupe_x}
-            # TF_x = {key: TF_x.get(key, 0) + 1 for key in [(title, token) for token in total_tokens_dupe_x] if key in TF_x} # Optimize this
-            # TF_x = Counter(total_tokens_dupe_x)
-            # IDF_x = {token: math.log(len(movies_df) / token_count[token]) for token in total_tokens_x_no_dupes}
-            # TF_IDF_x = {token: TF_x[(title,token)] * IDF_x[token] for token in total_tokens_x_no_dupes}
-
             
 
             for token in total_tokens_x_no_dupes:
@@ -499,10 +451,7 @@ def contentBasedRecommendation(id,simFunc,directory):
 
 
     tf_idf_x_list = []
-    # for key in TF_IDF_x.keys():
-    #         tf_idf_x_list.append(TF_IDF_x[key])
     tf_idf_x_list = list(TF_IDF_x.values())
-    # print('tf_idf_x: ',len(TF_x))
 
     similarity_scores = {}
 
@@ -582,9 +531,9 @@ def hybrid(userId,movieId,simFunc,k,directory):
     sorted_tfidf = dict(sorted(scores_tfidf.items(), key=lambda item: item[1], reverse=True))
 
     # Weights for each recommendation algorithm
-    weight1 = 0.4
-    weight2 = 0.5
-    weight3 = 0.3
+    weight1 = 0.4 # user to user
+    weight2 = 0.5 # tag
+    weight3 = 0.3 # tf-idf
 
     for val in sorted_u2u.values():
         val *= weight1
