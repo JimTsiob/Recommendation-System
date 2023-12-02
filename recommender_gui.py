@@ -85,14 +85,13 @@ def fetch_recommended_movies():
     
     if algorithm_variable.get() == "hybrid":
         inputs = user_input.split()
-        print(inputs)
         with open('text_files/hybrid/score_' + str(inputs[0]) + '_' + str(inputs[1]) + '_' + metric_variable.get() +'.txt', 'r') as file:
             for line in file:
                 key,value = map(float, line.strip().split())
                 rx[key] = value
 
     sorted_rx = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True))
-    first_n_keys = list(sorted_rx.keys())[:100]
+    first_n_keys = list(sorted_rx.keys())[:100] # take 100 most recommended movies for our user
     recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
     movies_list = "\n".join(recommended_movies['title'].values)
 
@@ -112,26 +111,31 @@ if len(arguments) < 2:
     master.destroy()
 
 metric_variable = StringVar(master)
-metric_variable.set(METRICS[0]) # default value for metrics dropdown
+metric_variable.set(METRICS[0]) # set default value for metrics dropdown
 
 dropdown_metrics = OptionMenu(master, metric_variable, *METRICS)
 dropdown_metrics.config(font=custom_font)
 dropdown_metrics.pack() # dropdown with metrics, pack function adds dropdown to widget.
 
 algorithm_variable = StringVar(master)
-algorithm_variable.set(ALGORITHMS[0])
+algorithm_variable.set(ALGORITHMS[0]) # set default value for algorithms dropdown
 
 dropdown_algorithms = OptionMenu(master,algorithm_variable, *ALGORITHMS)
 dropdown_algorithms.config(font=custom_font)
 dropdown_algorithms.pack() # dropdown with algorithms
 
-entry = Entry(master, width=30,font=custom_font)
+entry = Entry(master, width=30,font=custom_font) # input text field
 
 # Pack the Entry and Button widgets into the main window
 entry.pack(pady=10)  # pady adds some vertical padding
 
 button = Button(master, text="Search", command=fetch_recommended_movies,font=custom_font)
 button.pack()
+
+hybrid_label_text = "For hybrid , use an input like this: 1 2 (where 1 is for the user and 2 is for the movie)"
+hybrid_label = Label(master, text=hybrid_label_text, font=custom_font, pady=10)
+# text for hybrid algo
+hybrid_label.pack()
 
 # Initialize global variable to destroy window each time the Search button is pushed
 new_window = None

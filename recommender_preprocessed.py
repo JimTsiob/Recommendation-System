@@ -58,24 +58,35 @@ def main():
         print("\nHere are your top", number_of_recommendations, "recommendations: \n")
         print(recommended_movies['title'])
 
-    # elif arguments[7] == "title":
-    #     similarity_scores = contentBasedRecommendation(input,similarity_metric,arguments[1])
-    #     sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
-    #     first_n_keys = list(sorted_sxy.keys())[:number_of_recommendations] # get top n keys
-    #     recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    #     print("\nHere are your top", number_of_recommendations, "recommendations: \n")
-    #     print(recommended_movies['title'])
-    # elif arguments[7] == "hybrid":
-    #     if len(arguments) < 11:
-    #         print("ERROR: please provide all arguments.")
-    #         print('example: python recommender.py -d datasets -n 10 -s hybrid -a user -i 2 1')
-    #         return
-    #     user_input = int(arguments[9])
-    #     item_input = int(arguments[10])
-    #     hybrid_scores = hybrid(user_input,item_input,similarity_metric,128,number_of_recommendations,arguments[1])
-    #     sorted_hybrid_scores = dict(sorted(hybrid_scores.items(), key=lambda item: item[1], reverse=True))
-    #     first_n_keys = list(sorted_hybrid_scores.keys())[:number_of_recommendations] # get top n keys
-    #     recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    #     print("\nHere are your top", number_of_recommendations, "recommendations: \n")
-    #     print(recommended_movies['title'])
+    elif arguments[7] == "title":
+        with open('text_files/content_based/movie_' + str(input) + '_' + similarity_metric +'.txt', 'r') as file:
+            for line in file:
+                key,value = map(float, line.strip().split())
+                rx[key] = value
+
+        sorted_sxy = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
+        first_n_keys = list(sorted_sxy.keys())[:number_of_recommendations] # get top n keys
+        recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
+        print("\nHere are your top", number_of_recommendations, "recommendations: \n")
+        print(recommended_movies['title'])
+
+    elif arguments[7] == "hybrid":
+        user_input = input
+        movie_input = arguments[10]
+        if len(arguments) < 11:
+            print("ERROR: please provide all arguments.")
+            print('example: python recommender.py -d datasets -n 10 -s hybrid -a user -i 2 1')
+            return
+        
+        with open('text_files/hybrid/score_' + str(user_input) + '_' + str(movie_input) + '_' + similarity_metric +'.txt', 'r') as file:
+            for line in file:
+                key,value = map(float, line.strip().split())
+                rx[key] = value
+
+        sorted_sxy = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
+        first_n_keys = list(sorted_sxy.keys())[:number_of_recommendations] # get top n keys
+        recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
+        print("\nHere are your top", number_of_recommendations, "recommendations: \n")
+        print(recommended_movies['title'])
+        
 main()

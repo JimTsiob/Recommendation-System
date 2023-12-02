@@ -561,7 +561,7 @@ def contentBasedRecommendation(id,simFunc,directory):
     
     return similarity_scores
 
-def hybrid(userId,movieId,simFunc,k,n,directory):
+def hybrid(userId,movieId,simFunc,k,directory):
     # userId : the id of the user (for user to user)
     # movieId : the id of the movie (for any other recommendation algorithm)
     # simFunc: similarity metric
@@ -581,63 +581,26 @@ def hybrid(userId,movieId,simFunc,k,n,directory):
     sorted_tag = dict(sorted(scores_tag.items(), key=lambda item: item[1], reverse=True))
     sorted_tfidf = dict(sorted(scores_tfidf.items(), key=lambda item: item[1], reverse=True))
 
-    # get top n keys for all scores
-    
-    first_n_keys_u2u = list(sorted_u2u.keys())[:n]
-
-    first_n_keys_tag = list(sorted_tag.keys())[:n]
-
-    first_n_keys_tfidf = list(sorted_tfidf.keys())[:n]
-    
-
-    # Find common movies in the metrics
-    common_movie_ids = set(first_n_keys_u2u) & set(first_n_keys_tag) & set(first_n_keys_tfidf)
-
     # Weights for each recommendation algorithm
     weight1 = 0.4
     weight2 = 0.5
     weight3 = 0.3
 
-    # if there are no common movies simply sort all scores and send the best ones back
-    if (len(common_movie_ids) < n):
-        for val in sorted_u2u.values():
-            val *= weight1
+    for val in sorted_u2u.values():
+        val *= weight1
 
-        for val in sorted_tfidf.values():
-            val *= weight3
-        
-        for val in sorted_tag.values():
-            val *= weight2
-
-        hybrid_final_scores = {}
-        hybrid_final_scores.update(sorted_u2u)
-        hybrid_final_scores.update(sorted_tfidf)
-        hybrid_final_scores.update(sorted_tag)
-        return hybrid_final_scores
-
+    for val in sorted_tfidf.values():
+        val *= weight3
     
+    for val in sorted_tag.values():
+        val *= weight2
 
-    hybrid_scores = {}
-
-    # Perform linear combination on the top n scores
-    for movieId in common_movie_ids:
-        u2u_score = sorted_u2u(movieId,0)
-        tag_score = sorted_tag(movieId,0)
-        tfidf_score = sorted_tfidf(movieId,0)
-
-        hybrid_score = weight1 * u2u_score + weight2 * tag_score + weight3 * tfidf_score
-        hybrid_scores[movieId] = hybrid_score
-
-    return hybrid_scores
-# ratings_df = pd.read_csv('100_datasets/ratings.csv')
-# pivot_table = ratings_df.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0.5)
-# pivot_table = pivot_table.T # transpose so movies are the indexes
-
-# part_1_pt = pivot_table.iloc[:442, :] # large_pivot.iloc[:, :3]
-# sim_scores = {}
-# sim_scores.update(calculate_similarity_on_pivot_subset(part_1_pt,part_1_pt,"cosine"))
-# print('sim_scores',sim_scores)
-
+    hybrid_final_scores = {}
+    hybrid_final_scores.update(sorted_u2u)
+    hybrid_final_scores.update(sorted_tfidf)
+    hybrid_final_scores.update(sorted_tag)
+    return hybrid_final_scores
+    
 
 def main():
     arguments = sys.argv[1:]
@@ -699,7 +662,7 @@ def main():
             return
         user_input = int(arguments[9])
         item_input = int(arguments[10])
-        hybrid_scores = hybrid(user_input,item_input,similarity_metric,128,number_of_recommendations,arguments[1])
+        hybrid_scores = hybrid(user_input,item_input,similarity_metric,128,arguments[1])
         sorted_hybrid_scores = dict(sorted(hybrid_scores.items(), key=lambda item: item[1], reverse=True))
         first_n_keys = list(sorted_hybrid_scores.keys())[:number_of_recommendations] # get top n keys
         recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]

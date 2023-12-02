@@ -566,15 +566,14 @@ def contentBasedRecommendation(id,simFunc,directory):
     
     return similarity_scores
 
-def hybrid(userId,movieId,simFunc,k,n,directory):
+def hybrid(userId,movieId,simFunc,k,directory):
     # userId : the id of the user (for user to user)
     # movieId : the id of the movie (for any other recommendation algorithm)
     # simFunc: similarity metric
     # k: most similar users for user to user
-    # n: number of recommendations
 
     # Logic here is that we take a user and a movie that they've seen as input
-    # and we add weights to the scores of the algorithms , re-sorting them
+    # and we multiply weights to the scores of the algorithms , re-sorting them
     # and getting the best of both collaborative and content based filtering.
 
     scores_u2u = userToUser(userId,simFunc,k,directory)
@@ -586,62 +585,26 @@ def hybrid(userId,movieId,simFunc,k,n,directory):
     sorted_tag = dict(sorted(scores_tag.items(), key=lambda item: item[1], reverse=True))
     sorted_tfidf = dict(sorted(scores_tfidf.items(), key=lambda item: item[1], reverse=True))
 
-    # get top n keys for all scores
-    
-    first_n_keys_u2u = list(sorted_u2u.keys())[:n]
-
-    first_n_keys_tag = list(sorted_tag.keys())[:n]
-
-    first_n_keys_tfidf = list(sorted_tfidf.keys())[:n]
-    
-
-    # Find common movies in the metrics
-    common_movie_ids = set(first_n_keys_u2u) & set(first_n_keys_tag) & set(first_n_keys_tfidf)
-
     # Weights for each recommendation algorithm
     weight1 = 0.4
     weight2 = 0.5
     weight3 = 0.3
 
-    # if there are no common movies simply sort all scores and send the best ones back
-    if (len(common_movie_ids) < n):
-        for val in sorted_u2u.values():
-            val *= weight1
+    # multiply each algorithm with the respective weight (I give more weight to tag based algorithm because it seems to provide better results)
+    for val in sorted_u2u.values():
+        val *= weight1
 
-        for val in sorted_tfidf.values():
-            val *= weight3
-        
-        for val in sorted_tag.values():
-            val *= weight2
-
-        hybrid_final_scores = {}
-        hybrid_final_scores.update(sorted_u2u)
-        hybrid_final_scores.update(sorted_tfidf)
-        hybrid_final_scores.update(sorted_tag)
-        return hybrid_final_scores
-
+    for val in sorted_tfidf.values():
+        val *= weight3
     
+    for val in sorted_tag.values():
+        val *= weight2
 
-    hybrid_scores = {}
-
-    # Perform linear combination on the top n scores
-    for movieId in common_movie_ids:
-        u2u_score = sorted_u2u(movieId,0)
-        tag_score = sorted_tag(movieId,0)
-        tfidf_score = sorted_tfidf(movieId,0)
-
-        hybrid_score = weight1 * u2u_score + weight2 * tag_score + weight3 * tfidf_score
-        hybrid_scores[movieId] = hybrid_score
-
-    return hybrid_scores
-# ratings_df = pd.read_csv('100_datasets/ratings.csv')
-# pivot_table = ratings_df.pivot_table(index='userId', columns='movieId', values='rating',fill_value=0.5)
-# pivot_table = pivot_table.T # transpose so movies are the indexes
-
-# part_1_pt = pivot_table.iloc[:442, :] # large_pivot.iloc[:, :3]
-# sim_scores = {}
-# sim_scores.update(calculate_similarity_on_pivot_subset(part_1_pt,part_1_pt,"cosine"))
-# print('sim_scores',sim_scores)
+    hybrid_final_scores = {}
+    hybrid_final_scores.update(sorted_u2u)
+    hybrid_final_scores.update(sorted_tfidf)
+    hybrid_final_scores.update(sorted_tag)
+    return hybrid_final_scores
 
 
 def main():
@@ -707,47 +670,19 @@ def main():
                 with open('text_files/content_based/movie_' + str(movieId) + '_' + metric + '.txt', 'w') as file:
                     for key in rx.keys():
                         file.write(str(key) + ' ' + str(rx[key]) + "\n")
-                
-        # sorted_rx = dict(sorted(rx.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
-        # first_n_keys = list(sorted_rx.keys())[:number_of_recommendations] # get top n keys
-        # recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-        # print("\nHere are your top", number_of_recommendations, "recommendations: \n")
-        # print(recommended_movies['title'])
-            
-        
-    # elif algorithm == "item":
-    #     recommendation_scores = itemToItem(input,similarity_metric,128,arguments[1])
-    #     sorted_rec_scores = dict(sorted(recommendation_scores.items(), key=lambda item: item[1], reverse=True)) # sort recommendation scores in descending order
-    #     first_n_keys = list(sorted_rec_scores.keys())[:number_of_recommendations] # get top n keys
-    #     recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    #     print("\nHere are your top", number_of_recommendations, "recommendations: \n")
-    #     print(recommended_movies['title'])
-    # elif algorithm == "tag":
-    #     similarity_scores = tagBasedRecommendation(input,similarity_metric,arguments[1])
-    #     sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
-    #     first_n_keys = list(sorted_sxy.keys())[:number_of_recommendations] # get top n keys
-    #     recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    #     print("\nHere are your top", number_of_recommendations, "recommendations: \n")
-    #     print(recommended_movies['title'])
-    # elif algorithm == "title":
-    #     similarity_scores = contentBasedRecommendation(input,similarity_metric,arguments[1])
-    #     sorted_sxy = dict(sorted(similarity_scores.items(), key=lambda item: item[1], reverse=True)) # sort similarity scores in descending order
-    #     first_n_keys = list(sorted_sxy.keys())[:number_of_recommendations] # get top n keys
-    #     recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    #     print("\nHere are your top", number_of_recommendations, "recommendations: \n")
-    #     print(recommended_movies['title'])
-    # elif algorithm == "hybrid":
-    #     if len(arguments) < 11:
-    #         print("ERROR: please provide all arguments.")
-    #         print('example: python recommender.py -d datasets -n 10 -s hybrid -a user -i 2 1')
-    #         return
-    #     user_input = int(arguments[9])
-    #     item_input = int(arguments[10])
-    #     hybrid_scores = hybrid(user_input,item_input,similarity_metric,128,number_of_recommendations,arguments[1])
-    #     sorted_hybrid_scores = dict(sorted(hybrid_scores.items(), key=lambda item: item[1], reverse=True))
-    #     first_n_keys = list(sorted_hybrid_scores.keys())[:number_of_recommendations] # get top n keys
-    #     recommended_movies = movies_df[movies_df['movieId'].isin(first_n_keys)]
-    #     print("\nHere are your top", number_of_recommendations, "recommendations: \n")
-    #     print(recommended_movies['title'])
+
+    elif algorithm == "hybrid":
+        for userId in ratings_df['userId'].unique():
+            for i in range(1,10):
+                movie = movies_df[movies_df['movieId'] == i]
+                movieId = movie['movieId'].values[0]
+                for metric in sim_metrics:
+                    rx = hybrid(userId,movieId,metric,128,arguments[1])
+                    print('done for movie: ', movieId , 'and user:' , userId ,'metric:', metric)
+                    with open('text_files/hybrid/score_' + str(userId) + '_' + str(movieId) + '_' +  metric + '.txt', 'w') as file:
+                        for key in rx.keys():
+                            file.write(str(key) + ' ' + str(rx[key]) + "\n")
+
+
 main()
 

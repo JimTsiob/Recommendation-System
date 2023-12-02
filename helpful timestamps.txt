@@ -1,2 +1,0 @@
-dialexh Recommendation systems
-37:42 collaborative filtering (user-to-user)
