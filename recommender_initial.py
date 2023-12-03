@@ -195,8 +195,6 @@ def itemToItem(id,simFunc,k,directory):
         x = normalizer(x)
 
         x_movie_users = set(x_movie_ratings['userId'].tolist() + [id]) # get all users who have watched movie x for jaccard and dice
-        
-        print('x_movieId: ',x_movieId)
 
         for y_movieId, y_movie_ratings in ratings_df[ratings_df['movieId'].isin(pivot_table.index)].groupby('movieId'):
             y = ratings[y_movieId]
