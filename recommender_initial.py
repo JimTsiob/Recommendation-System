@@ -1,5 +1,4 @@
 import pandas as pd # pip install pandas
-import numpy as np # pip install numpy
 import math
 import sys
 import nltk # pip install nltk
@@ -395,23 +394,6 @@ def contentBasedRecommendation(id,simFunc,directory):
         for token in total_tokens:
             token_count[token] += 1 # count how many times each token appears in all titles/genres for IDF , essentially this finds the denominator for IDF
 
-    # Text pre-processing
-    total_tokens_dupe_all = []
-    total_tokens_all_no_dupes = []
-    for index,row in movies_df.iterrows():
-        title = row['title']
-        title = title.lower()
-        title = re.sub(r" \(\d+\)", "", title) # remove parentheses with dates (eg. (1995))
-        title = re.sub(r" \(.*", "", title) # remove all foreign titles in parentheses (from English) eg. turn shangai triad (Chinese title) to just shangai triad
-        title = re.sub(r'[^a-zA-Z0-9\s]', '', title) # remove all remaining non-alphanumeric characters such as dots, question marks, dashes etc.
-        title_tokens = title.split(' ')
-        title_tokens_no_stopwords = [token for token in title_tokens if token not in stop_words] # remove stopwords
-        no_dupe_title_tokens = list(set(title_tokens_no_stopwords))
-        total_tokens_dupe_all.extend(title_tokens_no_stopwords) 
-        total_tokens_all_no_dupes.extend(no_dupe_title_tokens) # taking both tokens of title and genres as features
-
-    # print('total',total_tokens_all_no_dupes)
-
     # TF and IDF calculation for movie x
     for index,row in movies_df.iterrows():
         title = row['title']
@@ -573,8 +555,8 @@ def main():
     print('tags_df size: ', tags_df.shape)
     print('movies_df size: ', movies_df.shape)
     print('links_df size: ', links_df.shape)
-    # print('genome_tags_df size: ', genome_tags_df.size)
-    # print('genome_scores_df size: ', genome_scores_df.size)
+    # print('genome_tags_df size: ', genome_tags_df.shape)
+    # print('genome_scores_df size: ', genome_scores_df.shape)
 
     if arguments[7] == "user":
         rx = userToUser(input,similarity_metric,128,arguments[1])
