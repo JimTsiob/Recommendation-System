@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommender GUI</title>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        form {
+            text-align: center;
+        }
+        label, input, select, button {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <form action="/recommend" method="post">
+        <label for="metric">Select Metric:</label>
+        <select name="metric" id="metric">
+            {% for m in metrics %}
+                <option value="{{ m }}">{{ m }}</option>
+            {% endfor %}
+        </select>
+
+        <br>
+
+        <label for="algorithm">Select Algorithm:</label>
+        <select name="algorithm" id="algorithm">
+            {% for a in algorithms %}
+                <option value="{{ a }}">{{ a }}</option>
+            {% endfor %}
+        </select>
+
+        <br>
+
+        <label for="user_input">User Input:</label>
+        <input type="text" name="user_input" required>
+
+        <br>
+
+        <button type="submit">Search</button>
+        <h2> For hybrid an example input is: 1 2 where 1 is the user ID and 2 is the movie ID </h2>
+    </form>
+    
+</body>
+</html>
