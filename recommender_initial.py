@@ -192,19 +192,19 @@ def itemToItem(id,simFunc,k,directory):
     # For every movie of x , take the similarity score with every other movie watched by y users who watched the same movies as x 
     for x_movieId, x_movie_ratings in movie_ratings_for_x_movies.groupby('movieId'):
         x = x_movie_ratings['rating'].tolist()
-        x = normalizer(x)
-
+       
         x_movie_users = set(x_movie_ratings['userId'].tolist() + [id]) # get all users who have watched movie x for jaccard and dice
 
         for y_movieId, y_movie_ratings in ratings_df[ratings_df['movieId'].isin(pivot_table.index)].groupby('movieId'):
             y = ratings[y_movieId]
-            y = normalizer(y)
             sxy = 0
             if simFunc.lower() == "jaccard":
                 sxy = jaccard(x_movie_users, set(y_movie_ratings['userId'].tolist()))
             elif simFunc.lower() == "dice":
                 sxy = dice(x_movie_users, set(y_movie_ratings['userId'].tolist()))
             elif simFunc.lower() == "cosine":
+                x = normalizer(x)
+                y = normalizer(y)
                 sxy = cosine(x, y)
             else:
                 sxy = pearson(x, y)
