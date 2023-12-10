@@ -1,0 +1,14 @@
+Solving Tensor Low Cycle Rank Approximation
+Multi-State Brain Network Discovery
+
+Semi-supervised 3D Video Information Retrieval
+with Deep Neural Network and Bi-directional
+Dynamic-time Warping Algorithm (one paper)
+
+Robust Fraud Detection via Supervised Contrastive Learning
+
+Group-Aware Interest Disentangled Dual-Training for Personalized Recommendation
+
+Deep Leaning-Based Scientific Error-bounded Lossy Compression with Super-resolution Neural Networks
+
+Causal Fairness-Guided Dataset Reweighting using Neural Networks -> good one
