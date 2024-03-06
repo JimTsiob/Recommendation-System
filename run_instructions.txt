@@ -1,0 +1,37 @@
+(First of all , make sure to have Python and pip installed on your computer)
+
+1. open cmd and run the following commands:
+pip install pandas
+pip install nltk
+pip install flask (for web UI)
+
+2. extract all files in the same folder.
+
+3. Open a cmd and navigate to the path of the extracted files.
+
+4. instructions on how to run each file:
+
+(Example for recommender initial, with custom file path, needs double quotes to work, csv files are in the test folder)
+
+python recommender_initial.py -d "C:\NKUA\1st semester\Big Data Management\test" -n 10 -s cosine -a title -i 1
+
+(Hybrid example for recommender initial)
+python recommender_initial.py -d 100_datasets -n 10 -s jaccard -a hybrid -i 1 1
+
+(here you may add any file path you want after -d in the format I've added it for Windows , but it's highly recommended for faster running to just add a folder named datasets which will contain the csv files or any other name you want, which will also be located in the same folder as the py files. Therefore, you would do something like the following:
+python recommender_initial.py -d datasets -n 10 -s cosine -a title -i 1)
+
+(Example for Web UI)
+python recommender_web.py -d datasets
+Go to browser and enter localhost:5000 to see the web page.
+
+(Example for preprocess)
+python preprocess.py -d datasets -a hybrid 
+
+(Example for recommender preprocessed)
+python recommender_preprocessed.py -d datasets -n 10 -s cosine -a title -i 1 
+
+(After -s you can put one of the following: jaccard, dice, cosine or pearson)
+(After -a you can put one of the following: user, item, tag, title, hybrid)
+(After -i you may put either a user ID , a movie ID or a user ID and movie ID depending on the algorithm used)
+
